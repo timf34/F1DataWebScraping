@@ -34,6 +34,22 @@ class TimingTable:
         """
         return self.__dict__
 
+    def __setitem__(self, key, value):
+        """
+        This allows the dataclass to be accessed by index
+        """
+        if isinstance(key, str):
+            self.__dict__[key] = value
+        elif isinstance(key, int):
+            # We can set a value using an int index
+            # This is a bit hacky but it works
+            # We can't use the __dict__ because the keys are not valid python identifiers
+            # So we have to use the __dict__ to get the keys and then use the __dict__ to set the values
+            keys = list(self.__dict__.keys())
+            self.__dict__[keys[key]] = value
+        else:
+            raise TypeError("Key must be a string or an int")
+
 
 def main() -> None:
     """
@@ -60,7 +76,13 @@ def main() -> None:
                     in_pit=True,
                     pit=18,
                     last_pit=19)
+    print(x)
 
+    x[18] = 5
+    print(x)
+    # print(type(x.__annotations__))
+    # for i in x.__annotations__:
+    #     print(i)
 
 if __name__ == "__main__":
     main()
