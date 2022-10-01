@@ -26,7 +26,6 @@ class SuperTaikyuScraping:
         """
         This saves the html file to the current directory
         """
-        print(self.html)
         with open("supertaikyu.html", "w", encoding="utf-8") as f:
             f.write(self.html)
 
