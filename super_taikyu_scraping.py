@@ -29,6 +29,10 @@ class SuperTaikyuScraping:
         with open("supertaikyu.html", "w", encoding="utf-8") as f:
             f.write(self.html)
 
+    def save_soup(self) -> None:
+        with open("supertaikyu_soup.txt", "w", encoding="utf-8") as f:
+            f.write(self.soup.prettify())
+
     def print_soup(self) -> None:
         # print("html: \n", self.html)
         print("soup: \n", self.soup.prettify())
@@ -36,7 +40,7 @@ class SuperTaikyuScraping:
 
 def main():
     web_scraper = SuperTaikyuScraping(use_local_html=True)
-    web_scraper.print_soup()
+    web_scraper.save_soup()
 
 
 if __name__ == "__main__":
