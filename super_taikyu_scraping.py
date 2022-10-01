@@ -6,7 +6,7 @@ from selenium import webdriver
 from typing import List
 import time
 
-from config import TimingTable
+from config import TimingTableCar, TimingTable
 
 
 class SuperTaikyuScraping:
@@ -61,15 +61,24 @@ class SuperTaikyuScraping:
             print("\nnew table")
 
     def working_with_timing_table(self) -> None:
+
+        # Initialize our table data store
+        table_db: TimingTable = TimingTable()
+
         # Find all rows in self.timing_table[0] that contain the 'data-name' attribute
         rows = self.timing_table[0].find_all("tr", {"data-name": True})
-        for row in rows[0:1]:
+        for row in rows:
+            car_db = TimingTableCar()
             cols = row.find_all("td")   # Find all columns in the row
             for index, col in enumerate(cols):
                 print(index, col.text)
+                car_db[index] = col.text
                 if col.text == "":
                     print("None")
                 print("new col")
+            table_db.cars[car_db.car_num] = car_db
+        print(table_db.cars)
+        print(len(table_db.cars))
 
 
 
