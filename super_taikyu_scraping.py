@@ -6,10 +6,13 @@ import time
 
 
 class SuperTaikyuScraping:
-    def __init__(self):
+    def __init__(self, use_local_html: bool = False):
         self.url: str = "https://www.supertaikyu.live/timings/"
-        self.driver = webdriver.Edge()
-        self.html: str = self.get_html_using_selenium()
+        if use_local_html:
+            self.html: str = open("supertaikyu.html", "r", encoding="utf-8").read()
+        else:
+            self.driver = webdriver.Edge()
+            self.html: str = self.get_html_using_selenium()
         self.soup: BeautifulSoup = BeautifulSoup(self.html, "html.parser")
 
     def get_html_using_selenium(self) -> str:
@@ -28,12 +31,13 @@ class SuperTaikyuScraping:
             f.write(self.html)
 
     def print_soup(self) -> None:
-        print(self.soup.prettify())
+        # print("html: \n", self.html)
+        print("soup: \n", self.soup.prettify())
 
 
 def main():
-    web_scraper = SuperTaikyuScraping()
-    web_scraper.save_html()
+    web_scraper = SuperTaikyuScraping(use_local_html=True)
+    web_scraper.print_soup()
 
 
 if __name__ == "__main__":
