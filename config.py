@@ -3,11 +3,11 @@ from typing import List, Dict, Union
 
 
 @dataclass
-class TimingTable:
+class TimingTableCar:
     """
     This is a dataclass for the timing table
     """
-    # TODO: this is definitely bad practice. Sort this out later.
+    # TODO: this is definitely bad practice. Sort this out later... I should just use a normal class and not a dataclass
 
     position: int = None
     pic: int = None  # Not sure what this is tbh
@@ -44,7 +44,7 @@ class TimingTable:
             self.__dict__[key] = value
         elif isinstance(key, int):
             # We can set a value using an int index
-            # This is a bit hacky but it works
+            # This is a bit hacky, but it works:)
             # We can't use the __dict__ because the keys are not valid python identifiers
             # So we have to use the __dict__ to get the keys and then use the __dict__ to set the values
             keys = list(self.__dict__.keys())
@@ -53,38 +53,45 @@ class TimingTable:
             raise TypeError("Key must be a string or an int")
 
 
+class TimingTable:
+    def __init__(self):
+        # I would want a dict where each key is a car number and the value is a TimingTableCar
+        self.cars: Dict[str, TimingTableCar] = {}
+        self.random_val: int
+
+
 def main() -> None:
     """
     This is the main function
     """
 
-    x = TimingTable(position=1,
-                    pic=1,
-                    car_num=888,
-                    _class="4",
-                    laps=5,
-                    dr="6",
-                    driver_name="Joe",
-                    machine_name="Joe the Machine",
-                    last_lap_time="9",
-                    best_lap_time="10",
-                    gaps="",
-                    int_full_stop="",
-                    s1="13",
-                    s2="14",
-                    s3="15",
-                    s4="16",
-                    speed="17",
-                    in_pit=True,
-                    pit=18,
-                    last_pit=19)
-    print(x)
+    x = TimingTableCar(position=1,
+                        pic=1,
+                        car_num=888,
+                        _class="4",
+                        laps=5,
+                        dr="6",
+                        driver_name="Joe",
+                        machine_name="Joe the Machine",
+                        last_lap_time="9",
+                        best_lap_time="10",
+                        gaps="",
+                        int_full_stop="",
+                        s1="13",
+                        s2="14",
+                        s3="15",
+                        s4="16",
+                        speed="17",
+                        in_pit=True,
+                        pit=18,
+                        last_pit=19)
 
-    x[18] = 5
-    print(x)
-    # print(type(x.__annotations__))
-    # for i in x.__annotations__:
-    #     print(i)
+    table = TimingTable()
+
+    table.cars["888"] = x
+
+    print(table.cars)
+
 
 if __name__ == "__main__":
     main()
