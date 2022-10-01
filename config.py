@@ -7,26 +7,28 @@ class TimingTable:
     """
     This is a dataclass for the timing table
     """
-    position: int
-    pic: int  # Not sure what this is tbh
-    car_num: int
-    _class: str
-    laps: int
-    dr: str  # Not sure what this is... samples include A, B, C and D...?
-    driver_name: str
-    machine_name: str  # Seems to tbe the team name?
-    last_lap_time: str  # This is a string because it can be "DNF" or "LAP"
-    best_lap_time: str
-    gaps: str
-    int_full_stop: str  # Not sure what this is
-    s1: str
-    s2: str
-    s3: str
-    s4: str
-    speed: str
-    in_pit: bool
-    pit: int
-    last_pit: int
+    # TODO: this is definitely bad practice. Sort this out later.
+
+    position: int = None
+    pic: int = None  # Not sure what this is tbh
+    car_num: int = None
+    _class: str = None
+    laps: int = None
+    dr: str = None  # Not sure what this is... samples include A, B, C and D...?
+    driver_name: str = None
+    machine_name: str = None  # Seems to tbe the team name?
+    last_lap_time: str = None  # This is a string because it can be "DNF" or "LAP"
+    best_lap_time: str = None
+    gaps: str = None
+    int_full_stop: str = None  # Not sure what this is
+    s1: str = None
+    s2: str = None
+    s3: str = None
+    s4: str = None
+    speed: str = None
+    in_pit: bool = None
+    pit: int = None
+    last_pit: int = None
 
     def to_dict(self) -> Dict:
         """
