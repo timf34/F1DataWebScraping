@@ -9,11 +9,11 @@ class TimingTableCar:
     """
     # TODO: this is definitely bad practice. Sort this out later... I should just use a normal class and not a dataclass
 
-    position: int = None
-    pic: int = None  # Not sure what this is tbh
-    car_num: int = None
+    position: str = None
+    pic: str = None  # Not sure what this is tbh
+    car_num: str = None
     _class: str = None
-    laps: int = None
+    laps: str = None
     dr: str = None  # Not sure what this is... samples include A, B, C and D...?
     driver_name: str = None
     machine_name: str = None  # Seems to tbe the team name?
