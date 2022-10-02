@@ -3,6 +3,7 @@ import requests
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.webdriver.edge.options import Options
 from typing import List
 import time
 
@@ -10,23 +11,30 @@ from config import TimingTableCar, TimingTable
 
 
 class SuperTaikyuScraping:
-    def __init__(self, use_local_html: bool = False):
+    def __init__(self, use_local_html: bool = False, headless: bool = True):
         self.url: str = "https://www.supertaikyu.live/timings/"
         if use_local_html:
             self.html: str = open("supertaikyu.html", "r", encoding="utf-8").read()
-        else:
+        elif not headless:
             self.driver = webdriver.Edge()
             self.html: str = self.get_html_using_selenium()
+        else:
+            self.html = ""
+            pass
+            # raise NotImplementedError("Headless scraping is implemented in a child class")
         self.soup: BeautifulSoup = BeautifulSoup(self.html, "html.parser")
 
         self.tables: List[str] = self.soup.find_all("table")
+        self.headless: bool = headless
         self.timing_table: bs4.ResultSet = self.soup.find_all("table", {"class": "table01", "id": "timing_table"})  # This will work for any of the id's in the tables
 
-    def get_html_using_selenium(self) -> str:
+    def get_html_using_selenium(self, delay: int = 3) -> str:
         self.driver.get(self.url)
-        time.sleep(3)
+        time.sleep(delay)
         html = self.driver.page_source
-        self.driver.close()
+        # Note: we are using headless mode solely for continuous updates here... although we could probs use it in general.
+        if not self.headless:
+            self.driver.close()
         return html
 
     def save_html(self) -> None:
@@ -78,13 +86,32 @@ class SuperTaikyuScraping:
         print(len(table_db.cars))
 
 
+class SuperTaikyuScrapingHeadless(SuperTaikyuScraping):
+    def __init__(self):
+        super().__init__(headless=True)
+        options = Options()
+        options.headless = True
+        self.driver = webdriver.Edge(options=options)
+
+    def continuous_update(self):
+        while True:
+            self.html = self.get_html_using_selenium(delay=1)
+            self.soup: BeautifulSoup = BeautifulSoup(self.html, "html.parser")
+            self.timing_table: bs4.ResultSet = self.soup.find_all("table", {"class": "table01", "id": "timing_table"})
+            self.working_with_timing_table()
+            print("The time is: ", time.ctime())
+
+
 
 def main():
-    web_scraper = SuperTaikyuScraping(use_local_html=True)
-    web_scraper.save_soup()
-    # web_scraper.working_with_rows()
-    # web_scraper.working_with_headers()
-    web_scraper.working_with_timing_table()
+    # web_scraper = SuperTaikyuScraping(use_local_html=True)
+    # web_scraper.save_soup()
+    # # web_scraper.working_with_rows()
+    # # web_scraper.working_with_headers()
+    # web_scraper.working_with_timing_table()
+
+    continous_scraper = SuperTaikyuScrapingHeadless()
+    continous_scraper.continuous_update()
 
 
 if __name__ == "__main__":
