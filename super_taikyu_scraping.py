@@ -68,15 +68,12 @@ class SuperTaikyuScraping:
         # Find all rows in self.timing_table[0] that contain the 'data-name' attribute
         rows = self.timing_table[0].find_all("tr", {"data-name": True})
         for row in rows:
-            car_db = TimingTableCar()
-            cols = row.find_all("td")   # Find all columns in the row
+            car_db = TimingTableCar()  # Initialize a new TimingTableCar
+            cols = row.find_all("td")   # Find all columns in the row (all data cells within the row)
             for index, col in enumerate(cols):
-                print(index, col.text)
                 car_db[index] = col.text
-                if col.text == "":
-                    print("None")
-                print("new col")
-            table_db.cars[car_db.car_num] = car_db
+            table_db.cars[car_db.car_num] = car_db  # Add the car to the table, where the key is the car_number
+
         print(table_db.cars)
         print(len(table_db.cars))
 
@@ -87,10 +84,9 @@ def main():
     web_scraper.save_soup()
     # web_scraper.working_with_rows()
     # web_scraper.working_with_headers()
-
     web_scraper.working_with_timing_table()
 
 
 if __name__ == "__main__":
     main()
-    print("success")
+    print("Done.")
