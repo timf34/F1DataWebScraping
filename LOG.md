@@ -5,7 +5,8 @@
 
 TODO next:
 
-- [] Plan for testing the code that continuously pulls updates from the website. My sense is to run the html on a local server and then run code that updates the website.
-- [] I should write notes down on HTML and CSS
+- [ ] Cleanup the code; write down a plan for what the structure should be like 
+- [ ] Plan for testing the code that continuously pulls updates from the website. My sense is to run the html on a local server and then run code that updates the website.
+- [ ] I should write notes down on HTML and CSS
 
-- [] Not directly related to this project but I should start building websites/ web apps/ interfaces as some good practice.
+- [ ] Not directly related to this project but I should start building websites/ web apps/ interfaces as some good practice.
