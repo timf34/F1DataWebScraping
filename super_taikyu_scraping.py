@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from dataclasses import asdict
 from selenium import webdriver
 from selenium.webdriver.edge.options import Options
-from typing import List
+from typing import List, Union
 
 from config import TimingTableCar, TimingTable
 from utils import open_object_using_pickle
@@ -113,15 +113,26 @@ class ConvertTimingTableToList:
         self.timing_table: TimingTable = open_object_using_pickle("timing_table_object.pkl")
         # self.timing_table_list: List[List[str]] = self.convert_timing_table_to_list()
 
-    def convert_timing_table_to_list(self) -> List[List[str]]:
+    def convert_timing_table_to_list(self, list_of_lists: bool = False) -> Union[List[str], List[List[str]]]:
         # Reinitialize self.timing_table_cars as the same dict but with the keys sorted alphabetically
-        self.timing_table.cars = {k: v for k, v in sorted(self.timing_table.cars.items(), key=lambda item: item[0])}
+        self.timing_table.cars = dict(sorted(self.timing_table.cars.items(), key=lambda item: item[0]))
 
-        return [list(asdict(car).values()) for car in self.timing_table.cars.values()]
+        if list_of_lists:
+            return [list(asdict(car).values()) for car in self.timing_table.cars.values()]
+        else:
+            # big_list = []
+            # for car in self.timing_table.cars.values():
+            #     big_list.extend(list(asdict(car).values()))
+            #     big_list.extend("\n")
+            # return big_list
 
-    # Note: this current structure is not ideal... I don't think we want nested lists. We should try to copy the
-    # f1 structure more where it's all just one list. Going to toilet but come back to this in a bit. **Actually write
-    # down my plan more!!**
+            # Make a faster version of the above loop, including the newline
+            return [item for sublist in [[*asdict(car).values(), "\n"] for car in self.timing_table.cars.values()] for item in sublist]
+
+
+
+
+
 
 
 def main():
@@ -137,8 +148,7 @@ def main():
     converter = ConvertTimingTableToList()
     x = converter.convert_timing_table_to_list()
 
-    for i in x:
-        print(i[2])
+    print(x)
 
 
 
