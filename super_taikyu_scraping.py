@@ -120,6 +120,10 @@ class ConvertTimingTableToList:
         # return timing_table_list
         return [list(asdict(car).values()) for car in self.timing_table.cars.values()]
 
+    # Note: this current structure is not ideal... I don't think we want nested lists. We should try to copy the
+    # f1 structure more where it's all just one list. Going to toilet but come back to this in a bit. **Actually write
+    # down my plan more!!**
+
 
 def main():
     # web_scraper = SuperTaikyuScraping(use_local_html=True)
