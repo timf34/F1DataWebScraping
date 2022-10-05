@@ -1,13 +1,14 @@
 import bs4
-import requests
-from urllib.request import urlopen
+import time
+
 from bs4 import BeautifulSoup
+from dataclasses import asdict
 from selenium import webdriver
 from selenium.webdriver.edge.options import Options
 from typing import List
-import time
 
 from config import TimingTableCar, TimingTable
+from utils import open_object_using_pickle
 
 
 class SuperTaikyuScraping:
@@ -79,8 +80,9 @@ class SuperTaikyuScraping:
             car_db = TimingTableCar()  # Initialize a new TimingTableCar
             cols = row.find_all("td")   # Find all columns in the row (all data cells within the row)
             for index, col in enumerate(cols):
-                car_db[index] = col.text
+                car_db[index] = col.text  # Add the text of the column to the TimingTableCar via the index
             table_db.cars[car_db.car_num] = car_db  # Add the car to the table, where the key is the car_number
+
 
         print(table_db.cars)
         print(len(table_db.cars))
@@ -102,6 +104,22 @@ class SuperTaikyuScrapingHeadless(SuperTaikyuScraping):
             print("The time is: ", time.ctime())
 
 
+class ConvertTimingTableToList:
+    """
+        This class is for converting the TimingTable object to a List object suitable for sending to our device
+        via MQTT
+    """
+    def __init__(self):
+        self.timing_table: TimingTable = open_object_using_pickle("timing_table_object.pkl")
+        # self.timing_table_list: List[List[str]] = self.convert_timing_table_to_list()
+
+    def convert_timing_table_to_list(self) -> List[List[str]]:
+        # timing_table_list: List[List[str]] = []
+        # for car in self.timing_table.cars.values():
+        #     timing_table_list.append(list(asdict(car).values()))
+        # return timing_table_list
+        return [list(asdict(car).values()) for car in self.timing_table.cars.values()]
+
 
 def main():
     # web_scraper = SuperTaikyuScraping(use_local_html=True)
@@ -110,8 +128,11 @@ def main():
     # # web_scraper.working_with_headers()
     # web_scraper.working_with_timing_table()
 
-    continous_scraper = SuperTaikyuScrapingHeadless()
-    continous_scraper.continuous_update()
+    # continous_scraper = SuperTaikyuScrapingHeadless()
+    # continous_scraper.continuous_update()
+
+    converter = ConvertTimingTableToList()
+    print(converter.convert_timing_table_to_list())
 
 
 if __name__ == "__main__":
