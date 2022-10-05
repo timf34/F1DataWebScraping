@@ -1,3 +1,11 @@
+### 5/10/22
+
+- Plan for today:
+- [ ] Convert current data structure to be the same structure as we have with the normal F1 dataset.
+  - Note that going forward I might want to change the datastructure that we use, so keep this in mind.
+  - Note: I will keep working notes on Notion log to avoid it getting too messy in here. 
+
+
 ### 1/10/22
 
 - Code for continous updates from the super taikyu website is together
