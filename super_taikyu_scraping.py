@@ -114,10 +114,9 @@ class ConvertTimingTableToList:
         # self.timing_table_list: List[List[str]] = self.convert_timing_table_to_list()
 
     def convert_timing_table_to_list(self) -> List[List[str]]:
-        # timing_table_list: List[List[str]] = []
-        # for car in self.timing_table.cars.values():
-        #     timing_table_list.append(list(asdict(car).values()))
-        # return timing_table_list
+        # Reinitialize self.timing_table_cars as the same dict but with the keys sorted alphabetically
+        self.timing_table.cars = {k: v for k, v in sorted(self.timing_table.cars.items(), key=lambda item: item[0])}
+
         return [list(asdict(car).values()) for car in self.timing_table.cars.values()]
 
     # Note: this current structure is not ideal... I don't think we want nested lists. We should try to copy the
@@ -136,7 +135,11 @@ def main():
     # continous_scraper.continuous_update()
 
     converter = ConvertTimingTableToList()
-    print(converter.convert_timing_table_to_list())
+    x = converter.convert_timing_table_to_list()
+
+    for i in x:
+        print(i[2])
+
 
 
 if __name__ == "__main__":
