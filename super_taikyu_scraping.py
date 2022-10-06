@@ -126,7 +126,7 @@ class ConvertTimingTableToList:
             #     big_list.extend("\n")
             # return big_list
 
-            # Make a faster version of the above loop, including the newline
+            # Make a faster version of the above loop, including the newline (copilot is amazing)
             return [item for sublist in [[*asdict(car).values(), "\n"] for car in self.timing_table.cars.values()] for item in sublist]
 
 
