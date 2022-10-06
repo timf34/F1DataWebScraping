@@ -1,5 +1,7 @@
 import bs4
+import boto3
 import time
+import sys
 
 from bs4 import BeautifulSoup
 from dataclasses import asdict
@@ -7,6 +9,7 @@ from selenium import webdriver
 from selenium.webdriver.edge.options import Options
 from typing import List, Union
 
+from aws_keys import ACCESS_KEY, SECRET_ACCESS_KEY
 from config import TimingTableCar, TimingTable
 from utils import open_object_using_pickle
 
@@ -130,7 +133,19 @@ class ConvertTimingTableToList:
             return [item for sublist in [[*asdict(car).values(), "\n"] for car in self.timing_table.cars.values()] for item in sublist]
 
 
+class SendTimingTableToMQTT:
+    def __init__(self, topic: str = "RACE/3"):
+        self.access_key: str = ACCESS_KEY
+        self.secret_key: str = SECRET_ACCESS_KEY
+        self.topic: str = topic
+        self.iot_client = boto3.client('iot-data', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_ACCESS_KEY, region_name='eu-west-1')
 
+    def publish_to_topic(self, data) -> None:
+        response = self.iot_client.publish(
+            topic=self.topic,
+            qos=1,
+            payload=str(data)
+        )
 
 
 
@@ -146,10 +161,14 @@ def main():
     # continous_scraper.continuous_update()
 
     converter = ConvertTimingTableToList()
-    x = converter.convert_timing_table_to_list()
+    sample_list = converter.convert_timing_table_to_list()
 
-    print(x)
+    # Print the memory usage of the list
+    print("Memory usage of list: ", sys.getsizeof(sample_list))
 
+    # Initialize our MQTT client
+    mqtt_client = SendTimingTableToMQTT()
+    mqtt_client.publish_to_topic(sample_list)
 
 
 if __name__ == "__main__":
