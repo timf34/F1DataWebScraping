@@ -7,7 +7,10 @@
 
 - Notes:
   - We now have our data in largely the same format as in the OG dataset (one long list, each car separated by a "\n")
-  - Note: we might want to consider saving the data from Okayama
+    - Note: we might want to consider saving the data from Okayama for use in the future.
+    - Added code to send our data to MQTT topics...
+      - The size of the data is 9000 bytes currently in list format, which is too large! 
+      - We should be able to send all the strings (names, etc.) at once initially. 
 
 ### 1/10/22
 
