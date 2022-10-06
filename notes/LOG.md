@@ -5,6 +5,9 @@
   - Note that going forward I might want to change the datastructure that we use, so keep this in mind.
   - Note: I will keep working notes on Notion log to avoid it getting too messy in here. 
 
+- Notes:
+  - We now have our data in largely the same format as in the OG dataset (one long list, each car separated by a "\n")
+  - Note: we might want to consider saving the data from Okayama
 
 ### 1/10/22
 
