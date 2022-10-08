@@ -18,7 +18,7 @@ class SuperTaikyuScraping:
     def __init__(self, use_local_html: bool = False, headless: bool = True):
         self.url: str = "https://www.supertaikyu.live/timings/"
         if use_local_html:
-            self.html: str = open("supertaikyu.html", "r", encoding="utf-8").read()
+            self.html: str = open("data/supertaikyu.html", "r", encoding="utf-8").read()
         elif not headless:
             self.driver = webdriver.Edge()
             self.html: str = self.get_html_using_selenium()
@@ -45,11 +45,11 @@ class SuperTaikyuScraping:
         """
         This saves the html file to the current directory
         """
-        with open("supertaikyu.html", "w", encoding="utf-8") as f:
+        with open("data/supertaikyu.html", "w", encoding="utf-8") as f:
             f.write(self.html)
 
     def save_soup(self) -> None:
-        with open("supertaikyu_soup.txt", "w", encoding="utf-8") as f:
+        with open("data/supertaikyu_soup.txt", "w", encoding="utf-8") as f:
             f.write(self.soup.prettify())
 
     def print_soup(self) -> None:
@@ -117,7 +117,7 @@ class ConvertTimingTableToList:
         This works for live timing data as well (i.e. straight from our web scraper) as from a pickle file.
     """
     def __init__(self, live_data: bool = False):
-        self.timing_table: TimingTable = None if live_data else open_object_using_pickle("timing_table_object.pkl")
+        self.timing_table: TimingTable = None if live_data else open_object_using_pickle("data/timing_table_object.pkl")
 
         # This is just for testing/ debugging purposes.
     def convert_timing_table_to_full_list(self, timing_table: TimingTable = None, list_of_lists: bool = False) -> Union[List[str], List[List[str]]]:
