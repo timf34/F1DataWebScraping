@@ -11,7 +11,7 @@ from typing import List, Union
 
 from aws_keys import ACCESS_KEY, SECRET_ACCESS_KEY
 from config import TimingTableCar, TimingTable
-from utils import open_object_using_pickle, find_indices_of_string
+from utils import open_object_using_pickle, find_indices_of_string, get_initialized_car_timing_dict
 
 
 class SuperTaikyuScraping:
@@ -105,7 +105,7 @@ class SuperTaikyuScrapingHeadless(SuperTaikyuScraping):
 
     def continuous_update(self, print_time: bool = True) -> TimingTable:
         while True:
-            self.html = self.get_html_using_selenium(delay=1)
+            self.html = self.get_html_using_selenium(delay=2)
             self.soup: BeautifulSoup = BeautifulSoup(self.html, "html.parser")
             self.timing_table: bs4.ResultSet = self.soup.find_all("table", {"class": "table01", "id": "timing_table"})
             table_db = self.get_timing_table(print_tables=self.print_table)
@@ -159,10 +159,10 @@ class ConvertTimingTableToList:
             will merge data from the scraped data and the action baseline (i.e. braking, speed, rpm, etc.)
         """
         new_shorter_list = []
-        temp_short_car = ['' for _ in range(11)]
+        temp_short_car = ['' for _ in range(15)]
 
-        indices_we_want = [2, 16, 8]
-        indices_we_want_to_fill = [0, 1, 9]
+        indices_we_want = [2, 16, 8, 12, 13, 14, 15]
+        indices_we_want_to_fill = [0, 1, 9, 10, 11, 12, 13]
 
         for i in find_indices_of_string(_list=full_list, string="\n"):
             full_car = full_list[i - 20:i]
@@ -192,6 +192,15 @@ class SendTimingTableToMQTT:
             qos=1,
             payload=str(data)
         )
+
+
+class ActionsBaseline:
+    def __init__(self, short_list: List[str]):
+        self.short_list = short_list  # This is the web scraped short list.
+        self.car_timing_dict = get_initialized_car_timing_dict
+
+    def parse_sector_timing(self) -> None:
+        pass
 
 
 class LiveOrchestrator:

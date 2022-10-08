@@ -31,11 +31,11 @@ class WorkingWithFullList:
         """
         new_list = []
         # Car number, speed, throttle, brake, rpm, gear, gap_to_leader, gap_to_position_ahead, updated, most_recent_lap_time
-        # We can get car_number 2, speed 16, mostRecentLapTime
-        temp_short_car = ['' for _ in range(11)]
+        # We can get car_number 2, speed 16, mostRecentLapTime 8, S1 12, S2 13, S3 14, S4 15
+        temp_short_car = ['' for _ in range(15)]
 
-        indices_we_want = [2, 16, 8]
-        indices_we_want_to_fill = [0, 1, 9]
+        indices_we_want = [2, 16, 8, 12, 13, 14, 15]
+        indices_we_want_to_fill = [0, 1, 9, 10, 11, 12, 13]
 
         for i in self.find_indices_of_string("\n"):
             full_car = self.full_list[i - 20:i]
