@@ -1,3 +1,9 @@
+### 8/10/22
+
+- Plan 
+  - Adjust the ConvertToList class to work directly with the live TimingTable feed from the web scraping code. 
+
+
 ### 5/10/22
 
 - Plan for today:
