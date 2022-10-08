@@ -148,7 +148,7 @@ class ConvertTimingTableToList:
             return [item for sublist in [[*asdict(car).values(), "\n"] for car in self.timing_table.cars.values()] for item in sublist]
 
     @staticmethod
-    def convert_timing_table_to_short_list(full_list: List) -> List:
+    def convert_timing_table_to_short_list(full_list: List, print_info: bool = False) -> List:
         """
             This function takes the full list, and converts it to a shorter list, like the one in the OG F1 dataset.
             There will be some blank values where we don't have the info, there will also be blank values where we
@@ -164,14 +164,15 @@ class ConvertTimingTableToList:
             full_car = full_list[i - 20:i]
             for retrieval_index, index_to_fill in zip(indices_we_want, indices_we_want_to_fill):
                 temp_short_car[index_to_fill] = (full_car[retrieval_index])
-                if full_car[retrieval_index] == '':
-                    print(f"car number {full_car[2]} is missing index {index_to_fill}")
+                if print_info:
+                    if full_car[retrieval_index] == '':
+                        print(f"car number {full_car[2]} is missing index {index_to_fill}")
             temp_short_car[-1] = "\n"
 
-            print(temp_short_car)
+            if print_info:
+                print(temp_short_car)
             new_shorter_list.extend(temp_short_car)
 
-        print(new_shorter_list)
         return new_shorter_list
 
 
@@ -190,24 +191,30 @@ class SendTimingTableToMQTT:
         )
 
 
+class LiveOrchestrator:
+    def __init__(self):
+        self.continuous_scraping = SuperTaikyuScrapingHeadless()
+        self.convert_to_list = ConvertTimingTableToList(live_data=True)
+        self.mqtt_client = SendTimingTableToMQTT()
+
+    def run(self):
+        count = 0
+        while True:
+            # Get our Timing Table object
+            table_db = self.continuous_scraping.continuous_update()
+
+            # Get our Timing Table object
+            short_list = self.convert_to_list.convert_timing_table_to_short_list(self.convert_to_list.convert_timing_table_to_full_list(timing_table=table_db))
+
+            # Send to MQTT topic
+            self.mqtt_client.publish_to_topic(data=short_list)
+
+            count += 1
+
+
 def live_loop() -> None:
-
-    # Initialize stuff
-    continuous_scraping = SuperTaikyuScrapingHeadless()
-    convert_to_list = ConvertTimingTableToList(live_data=True)
-    mqtt_client = SendTimingTableToMQTT()
-
-    # Get our Timing Table object
-    table_db = continuous_scraping.continuous_update()
-
-    # Convert it to a list
-    short_list = convert_to_list.convert_timing_table_to_short_list(full_list=convert_to_list.convert_timing_table_to_full_list(timing_table=table_db))
-
-    print(short_list)
-
-    mqtt_client.publish_to_topic(data=short_list)
-
-
+    orchestrator = LiveOrchestrator()
+    orchestrator.run()
 
 
 def main():
