@@ -89,22 +89,26 @@ class SuperTaikyuScraping:
         if print_tables:
             print(f"table_db.cars: \n {table_db.cars}")
             print(f"len(table_db.cars): {len(table_db.cars)}")
+
+        if len(table_db.cars) == 0:
+            print("No cars found in the table. Increase the delay in get_html_using_selenium()!")
         return table_db
 
 
 class SuperTaikyuScrapingHeadless(SuperTaikyuScraping):
-    def __init__(self):
+    def __init__(self, print_table: bool = False):
         super().__init__(headless=True)
         options = Options()
         options.headless = True
         self.driver = webdriver.Edge(options=options)
+        self.print_table = print_table
 
     def continuous_update(self, print_time: bool = True) -> TimingTable:
         while True:
             self.html = self.get_html_using_selenium(delay=1)
             self.soup: BeautifulSoup = BeautifulSoup(self.html, "html.parser")
             self.timing_table: bs4.ResultSet = self.soup.find_all("table", {"class": "table01", "id": "timing_table"})
-            table_db = self.get_timing_table(print_tables=True)
+            table_db = self.get_timing_table(print_tables=self.print_table)
             if print_time:
                 print("The time is: ", time.ctime())
             return table_db
@@ -164,9 +168,8 @@ class ConvertTimingTableToList:
             full_car = full_list[i - 20:i]
             for retrieval_index, index_to_fill in zip(indices_we_want, indices_we_want_to_fill):
                 temp_short_car[index_to_fill] = (full_car[retrieval_index])
-                if print_info:
-                    if full_car[retrieval_index] == '':
-                        print(f"car number {full_car[2]} is missing index {index_to_fill}")
+                if print_info and full_car[retrieval_index] == '':
+                    print(f"car number {full_car[2]} is missing index {index_to_fill}")
             temp_short_car[-1] = "\n"
 
             if print_info:
@@ -193,7 +196,7 @@ class SendTimingTableToMQTT:
 
 class LiveOrchestrator:
     def __init__(self):
-        self.continuous_scraping = SuperTaikyuScrapingHeadless()
+        self.continuous_scraping = SuperTaikyuScrapingHeadless(print_table=False)
         self.convert_to_list = ConvertTimingTableToList(live_data=True)
         self.mqtt_client = SendTimingTableToMQTT()
 
