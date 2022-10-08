@@ -11,7 +11,7 @@ from typing import List, Union
 
 from aws_keys import ACCESS_KEY, SECRET_ACCESS_KEY
 from config import TimingTableCar, TimingTable
-from utils import open_object_using_pickle
+from utils import open_object_using_pickle, find_indices_of_string
 
 
 class SuperTaikyuScraping:
@@ -72,7 +72,7 @@ class SuperTaikyuScraping:
                 print(header.text)
             print("\nnew table")
 
-    def working_with_timing_table(self, print_tables: bool = False ) -> TimingTable:
+    def get_timing_table(self, print_tables: bool = False ) -> TimingTable:
 
         # Initialize our table data store
         table_db: TimingTable = TimingTable()
@@ -99,13 +99,15 @@ class SuperTaikyuScrapingHeadless(SuperTaikyuScraping):
         options.headless = True
         self.driver = webdriver.Edge(options=options)
 
-    def continuous_update(self):
+    def continuous_update(self, print_time: bool = True) -> TimingTable:
         while True:
             self.html = self.get_html_using_selenium(delay=1)
             self.soup: BeautifulSoup = BeautifulSoup(self.html, "html.parser")
             self.timing_table: bs4.ResultSet = self.soup.find_all("table", {"class": "table01", "id": "timing_table"})
-            self.working_with_timing_table()
-            print("The time is: ", time.ctime())
+            table_db = self.get_timing_table(print_tables=True)
+            if print_time:
+                print("The time is: ", time.ctime())
+            return table_db
 
 
 class ConvertTimingTableToList:
@@ -114,17 +116,23 @@ class ConvertTimingTableToList:
         via MQTT.
         This works for live timing data as well (i.e. straight from our web scraper) as from a pickle file.
     """
-    def __init__(self, live_timing_table: TimingTable, live_data: bool = False):
-        if live_data:
-            if live_timing_table is None:
-                raise ValueError("live_timing_table is None")
-            else:
-                self.timing_table = live_timing_table
-        else:
-            self.timing_table: TimingTable = open_object_using_pickle("timing_table_object.pkl")
-            # self.timing_table_list: List[List[str]] = self.convert_timing_table_to_list()
+    def __init__(self, live_data: bool = False):
+        self.timing_table: TimingTable = None if live_data else open_object_using_pickle("timing_table_object.pkl")
 
-    def convert_timing_table_to_list(self, list_of_lists: bool = False) -> Union[List[str], List[List[str]]]:
+        # This is just for testing/ debugging purposes.
+    def convert_timing_table_to_full_list(self, timing_table: TimingTable = None, list_of_lists: bool = False) -> Union[List[str], List[List[str]]]:
+        """
+           This function adds every item in TimingTable to a list, and returns the list. This list is too large for us
+           though in its entirety, so we trim it down before sending to MQTT using the
+           `convert_timing_table_to_short_list` function.
+        """
+
+        if self.timing_table is None:
+            if timing_table is None:
+                raise ValueError("Not passing a TimingTable object - we got None")
+            else:
+                self.timing_table = timing_table
+
         # Reinitialize self.timing_table_cars as the same dict but with the keys sorted alphabetically
         self.timing_table.cars = dict(sorted(self.timing_table.cars.items(), key=lambda item: item[0]))
 
@@ -136,9 +144,35 @@ class ConvertTimingTableToList:
             #     big_list.extend(list(asdict(car).values()))
             #     big_list.extend("\n")
             # return big_list
-
             # Make a faster version of the above loop, including the newline (copilot is amazing)
             return [item for sublist in [[*asdict(car).values(), "\n"] for car in self.timing_table.cars.values()] for item in sublist]
+
+    @staticmethod
+    def convert_timing_table_to_short_list(full_list: List) -> List:
+        """
+            This function takes the full list, and converts it to a shorter list, like the one in the OG F1 dataset.
+            There will be some blank values where we don't have the info, there will also be blank values where we
+            will merge data from the scraped data and the action baseline (i.e. braking, speed, rpm, etc.)
+        """
+        new_shorter_list = []
+        temp_short_car = ['' for _ in range(11)]
+
+        indices_we_want = [2, 16, 8]
+        indices_we_want_to_fill = [0, 1, 9]
+
+        for i in find_indices_of_string(_list=full_list, string="\n"):
+            full_car = full_list[i - 20:i]
+            for retrieval_index, index_to_fill in zip(indices_we_want, indices_we_want_to_fill):
+                temp_short_car[index_to_fill] = (full_car[retrieval_index])
+                if full_car[retrieval_index] == '':
+                    print(f"car number {full_car[2]} is missing index {index_to_fill}")
+            temp_short_car[-1] = "\n"
+
+            print(temp_short_car)
+            new_shorter_list.extend(temp_short_car)
+
+        print(new_shorter_list)
+        return new_shorter_list
 
 
 class SendTimingTableToMQTT:
@@ -156,10 +190,28 @@ class SendTimingTableToMQTT:
         )
 
 
+def live_loop() -> None:
+
+    # Initialize stuff
+    continuous_scraping = SuperTaikyuScrapingHeadless()
+    convert_to_list = ConvertTimingTableToList(live_data=True)
+    mqtt_client = SendTimingTableToMQTT()
+
+    # Get our Timing Table object
+    table_db = continuous_scraping.continuous_update()
+
+    # Convert it to a list
+    short_list = convert_to_list.convert_timing_table_to_short_list(full_list=convert_to_list.convert_timing_table_to_full_list(timing_table=table_db))
+
+    print(short_list)
+
+    mqtt_client.publish_to_topic(data=short_list)
+
+
 
 
 def main():
-    # web_scraper = SuperTaikyuScraping(use_local_html=True)
+    # web_scraper = SuperTaikyuScraping(use_local_html=False)
     # web_scraper.save_soup()
     # # web_scraper.working_with_rows()
     # # web_scraper.working_with_headers()
@@ -168,15 +220,18 @@ def main():
     # continous_scraper = SuperTaikyuScrapingHeadless()
     # continous_scraper.continuous_update()
 
-    converter = ConvertTimingTableToList()
-    sample_list = converter.convert_timing_table_to_list()
+    # converter = ConvertTimingTableToList()
+    # sample_list = converter.convert_timing_table_to_full_list()
+    # print(sample_list)
+    #
+    # # Print the memory usage of the list
+    # print("Memory usage of list: ", sys.getsizeof(sample_list))
+    #
+    # # Initialize our MQTT client
+    # mqtt_client = SendTimingTableToMQTT()
+    # mqtt_client.publish_to_topic(sample_list)
 
-    # Print the memory usage of the list
-    print("Memory usage of list: ", sys.getsizeof(sample_list))
-
-    # Initialize our MQTT client
-    mqtt_client = SendTimingTableToMQTT()
-    mqtt_client.publish_to_topic(sample_list)
+    live_loop()
 
 
 if __name__ == "__main__":
