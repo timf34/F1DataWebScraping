@@ -72,7 +72,7 @@ class SuperTaikyuScraping:
                 print(header.text)
             print("\nnew table")
 
-    def working_with_timing_table(self) -> None:
+    def working_with_timing_table(self, print_tables: bool = False ) -> TimingTable:
 
         # Initialize our table data store
         table_db: TimingTable = TimingTable()
@@ -86,9 +86,10 @@ class SuperTaikyuScraping:
                 car_db[index] = col.text  # Add the text of the column to the TimingTableCar via the index
             table_db.cars[car_db.car_num] = car_db  # Add the car to the table, where the key is the car_number
 
-
-        print(table_db.cars)
-        print(len(table_db.cars))
+        if print_tables:
+            print(f"table_db.cars: \n {table_db.cars}")
+            print(f"len(table_db.cars): {len(table_db.cars)}")
+        return table_db
 
 
 class SuperTaikyuScrapingHeadless(SuperTaikyuScraping):
@@ -110,11 +111,18 @@ class SuperTaikyuScrapingHeadless(SuperTaikyuScraping):
 class ConvertTimingTableToList:
     """
         This class is for converting the TimingTable object to a List object suitable for sending to our device
-        via MQTT
+        via MQTT.
+        This works for live timing data as well (i.e. straight from our web scraper) as from a pickle file.
     """
-    def __init__(self):
-        self.timing_table: TimingTable = open_object_using_pickle("timing_table_object.pkl")
-        # self.timing_table_list: List[List[str]] = self.convert_timing_table_to_list()
+    def __init__(self, live_timing_table: TimingTable, live_data: bool = False):
+        if live_data:
+            if live_timing_table is None:
+                raise ValueError("live_timing_table is None")
+            else:
+                self.timing_table = live_timing_table
+        else:
+            self.timing_table: TimingTable = open_object_using_pickle("timing_table_object.pkl")
+            # self.timing_table_list: List[List[str]] = self.convert_timing_table_to_list()
 
     def convert_timing_table_to_list(self, list_of_lists: bool = False) -> Union[List[str], List[List[str]]]:
         # Reinitialize self.timing_table_cars as the same dict but with the keys sorted alphabetically
