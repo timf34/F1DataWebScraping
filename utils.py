@@ -1,6 +1,6 @@
 import pickle as pkl
 from config import TimingTable
-from typing import List, Dict
+from typing import List, Dict, Generator, Union
 
 
 def save_object_using_pickle(output_path: str, object: TimingTable) -> None:
@@ -42,7 +42,7 @@ def get_initialized_car_timing_dict() -> Dict[str, Dict[str, float]]:
     return car_timing_dict
 
 
-def get_initialized_car_sector_dict() -> Dict[str, Dict[str, str]]:
+def get_initialized_car_sector_dict() -> Dict[str, Dict[str, Union[str, Generator]]]:
     """
         This creates a dict to keep track of the sector the car most recently finished
     """
@@ -51,8 +51,11 @@ def get_initialized_car_sector_dict() -> Dict[str, Dict[str, str]]:
     with open(r"C:\Users\timf3\PycharmProjects\F1DataWebScraping\data\car_nums.txt", "r") as f:
         car_nums = f.readlines()
 
+    def gen():
+        yield "empty temp generator"
+
     for car_num in car_nums:
-        car_sector_dict[car_num.replace("\n", "")] = {"sector" : "0.", "generator": "0."}
+        car_sector_dict[car_num.replace("\n", "")] = {"sector": "0.", "generator": gen()}
 
     return car_sector_dict
 
