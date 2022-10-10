@@ -29,7 +29,8 @@ def get_initialized_car_timing_dict() -> Dict[str, Dict[str, float]]:
     car_timing_dict: Dict[str, Dict[str, float]] = {}
 
     # We have hardcoded the car numbers into a txt file for now
-    with open("../data/car_nums.txt", "r") as f:
+    # TODO: this won't work on EC2 if we get it up there!
+    with open(r"C:\Users\timf3\PycharmProjects\F1DataWebScraping\data\car_nums.txt", "r") as f:
         car_nums = f.readlines()
 
     # Just initalize the sector times to 0 for now
@@ -41,38 +42,24 @@ def get_initialized_car_timing_dict() -> Dict[str, Dict[str, float]]:
     return car_timing_dict
 
 
-def quick_test():
-    x = [("a", 1), ("a", 2), ("b", 3), ("c", 4)]
-    length = len(x)
-    i = 0
-    while i < length:
-        if i < length - 1:
-            if x[i][0] != x[i + 1][0]:
-                print("Not equal babe", x[i])
-                x.pop(i)
-                length -= 1
-            else:
-                print("Equal")
-                x.pop(i)
-                length -= 1
+def get_initialized_car_sector_dict() -> Dict[str, Dict[str, str]]:
+    """
+        This creates a dict to keep track of the sector the car most recently finished
+    """
+    car_sector_dict: Dict[str, Dict[str, str]] = {}
 
-        else:
-            print("This is the last one", x[i])
-            print("Here is the whole list: ", x)
-            x.pop()
-            length -= 1
+    with open(r"C:\Users\timf3\PycharmProjects\F1DataWebScraping\data\car_nums.txt", "r") as f:
+        car_nums = f.readlines()
 
-    print("Final empty list", x)
+    for car_num in car_nums:
+        car_sector_dict[car_num.replace("\n", "")] = {"sector" : "0.", "generator": "0."}
 
-
-
-
-
-
+    return car_sector_dict
 
 
 def main():
-    quick_test()
+    x = get_initialized_car_sector_dict()
+    print(x)
 
 
 if __name__ == "__main__":
