@@ -34,7 +34,64 @@ def get_initialized_car_timing_dict() -> Dict[str, Dict[str, float]]:
 
     # Just initalize the sector times to 0 for now
     for car_num in car_nums:
-        car_timing_dict[car_num.replace("\n", "")] = {"S1": 0., "S2": 0., "S3": 0., "S4": 0.}
+        # TODO: need to be careful with the Type here. Should I keep it as a float?
+        car_timing_dict[car_num.replace("\n", "")] = {"S1": "0.", "S2": "0.", "S3": "0.", "S4": "0."}
 
     # print(car_timing_dict)
     return car_timing_dict
+
+
+def quick_test():
+    x = [("a", 1), ("a", 2), ("b", 3), ("c", 4)]
+
+    for index, i in enumerate(x):
+        _char = i[0]
+        if index < len(x) - 1:
+            next_char = x[index + 1][0]
+            if _char != next_char:
+                print("Not equal - this is the last one", i)
+                x.pop(0)
+            else:
+                print("Equal")
+                x.pop(0)
+                # x = x[index + 1:]
+        else:
+            print("This is the last one", i)
+            x.pop(0)
+
+    print(x)
+
+    print("\nnew method")
+
+    x = [("a", 1), ("a", 2), ("b", 3), ("c", 4)]
+    length = len(x)
+    i = 0
+    while i < length:
+        if i < length - 1:
+            if x[i][0] != x[i + 1][0]:
+                print("Not equal babe", x[i])
+                x.pop(i)
+                length -= 1
+            else:
+                print("Equal")
+                x.pop(i)
+                length -= 1
+
+        else:
+            print("This is the last one", x[i])
+            print("here is the whole list: ", x)
+            x.pop()
+            length -= 1
+
+    print("and here dawg", x)
+
+
+
+
+
+def main():
+    quick_test()
+
+
+if __name__ == "__main__":
+    main()
