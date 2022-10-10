@@ -56,6 +56,9 @@ class ActionsBaseline:
         each car number, removing the car number and previous sectors (if there's multiple) once its been sent.
 
         It iterates through the stack, while the car_num is the same.
+
+        This implementation was kinda tricky cause we were deleting from the stack while iterating through it.
+        In hindsight I realize we could have just deleted the list afterwards... ah well (I'm very tired still).
         """
         length = len(_stack)
         i = 0
