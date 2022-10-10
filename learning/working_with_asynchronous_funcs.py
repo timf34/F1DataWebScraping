@@ -1,31 +1,78 @@
 import asyncio
 import time
 
+from copy import deepcopy
+
+
 class WorkingWIthAsyncFuncs:
     """
         This is just a class for practice.
-
-        We need to have one function running continuously in the background, while we do other things.
-
-        This continuously running function needs to print "yolo" to the terminal.
-
-        Our other function, which is not continuous/ asynchronous, needs to print "hello world" to the terminal after
-        a delay of 5 seconds.
+        We need two asynchronous functions, with different delays. For now, they just print different things to the
+        terminal
     """
     def __init__(self):
-        self._loop = asyncio.get_event_loop()
-        self._loop.create_task(self._async_func())
-        self._loop.run_until_complete(self._non_async_func())
+        self.loop = asyncio.get_event_loop()
+        self.shared_dict = {"a": 1, "b": 2}
 
-    async def _async_func(self):
-        while True:
-            print("yolo")
+    def run(self):
+        self.loop.run_until_complete(self.async_func_1())
+        self.loop.run_until_complete(self.async_func_2())
+        self.loop.close()
+
+    async def async_func_1(self):
+        """
+        We have set this up so that this function edits a copy of the shared dictionary, and then updates the shared
+        one only when its done.
+        """
+
+        print("Starting async_func_1")
+        for _ in range(10):
+            temp_dict = deepcopy(self.shared_dict)  # Make a copy of the shared dict
+            temp_dict["a"] += 2  # Edit the copy
             await asyncio.sleep(1)
+            temp_dict["b"] += 2
+            await asyncio.sleep(4)
+            # Update the shared dict once finished with the copy, and delete the copy
+            # Note that we need to use deepcopy, as otherwise self.shared_dict would be updated with the changes to
+            # temp_dict, and then temp_dict would be deleted! self.shared_dict would hold a reference to temp_dict.
+            self.shared_dict = deepcopy(temp_dict)
+            del temp_dict
+        print("Finished async_func_1")
 
-    async def _non_async_func(self):
-        await asyncio.sleep(5)
-        print("hello world")
+    async def async_func_2(self):
+        while True:
+            print("Starting async_func_2")
+            print(self.shared_dict)
+            await asyncio.sleep(0.5)
+            print("Finished async_func_2")
+
+    def run_using_tasks(self):
+        task_1 = self.loop.create_task(self.async_func_1())
+        task_2 = self.loop.create_task(self.async_func_2())
+
+        self.loop.run_until_complete(asyncio.gather(task_1, task_2))
+        self.loop.close()
+
+    def run_using_tasks_with_time(self):
+        start_time = time.time()
+        task_1 = self.loop.create_task(self.async_func_1())
+        task_2 = self.loop.create_task(self.async_func_2())
+
+        self.loop.run_until_complete(asyncio.gather(task_1, task_2))
+        self.loop.close()
+        print(f"Time taken: {time.time() - start_time}")
+
+
+def main():
+    working_with_async_funcs = WorkingWIthAsyncFuncs()
+    print("Running using tasks")
+    working_with_async_funcs.run_using_tasks_with_time()
+
+    print("Running using run")
+    # working_with_async_funcs.run()
+
+
 
 
 if __name__ == "__main__":
-    WorkingWIthAsyncFuncs()
+    main()
