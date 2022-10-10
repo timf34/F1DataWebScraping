@@ -1,4 +1,5 @@
 import asyncio
+import bs4
 
 from selenium import webdriver
 
@@ -25,6 +26,10 @@ class AsyncWebScraping:
         page_source = self.driver.page_source
         self.driver.close()
         return page_source
+
+    def print_bs4_object(self):
+        self.loop.run_until_complete(self.async_print_bs4_object())
+        self.loop.close()
 
 
 def main():
