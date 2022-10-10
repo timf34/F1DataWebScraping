@@ -31,7 +31,9 @@ class WorkingWIthAsyncFuncs:
             temp_dict["a"] += 2  # Edit the copy
             await asyncio.sleep(1)
             temp_dict["b"] += 2
+            print("Time before asyncio.sleep(4): ", time.time())
             await asyncio.sleep(4)
+            print("Time after asyncio.sleep(4): ", time.time())
             # Update the shared dict once finished with the copy, and delete the copy
             # Note that we need to use deepcopy, as otherwise self.shared_dict would be updated with the changes to
             # temp_dict, and then temp_dict would be deleted! self.shared_dict would hold a reference to temp_dict.
@@ -63,7 +65,7 @@ class WorkingWIthAsyncFuncs:
         print(f"Time taken: {time.time() - start_time}")
 
 
-def main():
+def first_main():
     working_with_async_funcs = WorkingWIthAsyncFuncs()
     print("Running using tasks")
     working_with_async_funcs.run_using_tasks_with_time()
@@ -72,7 +74,5 @@ def main():
     # working_with_async_funcs.run()
 
 
-
-
 if __name__ == "__main__":
-    main()
+    first_main()
