@@ -76,9 +76,6 @@ class ActionsBaseline:
                 length -= 1
 
 
-
-
-
 def main():
     actions_baslines = ActionsBaseline()
     # actions_baslines.parse_sector_timing()

@@ -43,27 +43,6 @@ def get_initialized_car_timing_dict() -> Dict[str, Dict[str, float]]:
 
 def quick_test():
     x = [("a", 1), ("a", 2), ("b", 3), ("c", 4)]
-
-    for index, i in enumerate(x):
-        _char = i[0]
-        if index < len(x) - 1:
-            next_char = x[index + 1][0]
-            if _char != next_char:
-                print("Not equal - this is the last one", i)
-                x.pop(0)
-            else:
-                print("Equal")
-                x.pop(0)
-                # x = x[index + 1:]
-        else:
-            print("This is the last one", i)
-            x.pop(0)
-
-    print(x)
-
-    print("\nnew method")
-
-    x = [("a", 1), ("a", 2), ("b", 3), ("c", 4)]
     length = len(x)
     i = 0
     while i < length:
@@ -79,11 +58,14 @@ def quick_test():
 
         else:
             print("This is the last one", x[i])
-            print("here is the whole list: ", x)
+            print("Here is the whole list: ", x)
             x.pop()
             length -= 1
 
-    print("and here dawg", x)
+    print("Final empty list", x)
+
+
+
 
 
 
