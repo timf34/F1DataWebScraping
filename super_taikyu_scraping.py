@@ -226,6 +226,7 @@ class LiveOrchestrator:
 
             # Send to MQTT topic
             self.mqtt_client.publish_to_topic(data=short_list)
+            print(short_list)
 
             count += 1
 
