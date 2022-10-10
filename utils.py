@@ -29,7 +29,7 @@ def get_initialized_car_timing_dict() -> Dict[str, Dict[str, float]]:
     car_timing_dict: Dict[str, Dict[str, float]] = {}
 
     # We have hardcoded the car numbers into a txt file for now
-    with open("data/car_nums.txt", "r") as f:
+    with open("../data/car_nums.txt", "r") as f:
         car_nums = f.readlines()
 
     # Just initalize the sector times to 0 for now
