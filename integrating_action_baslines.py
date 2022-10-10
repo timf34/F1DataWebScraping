@@ -1,3 +1,4 @@
+import asyncio
 import sys
 
 from copy import deepcopy
@@ -7,6 +8,7 @@ from typing import List, Dict, Generator, Union
 # Import from the utils.py file in the parent directory
 sys.path.append("")
 from utils import find_indices_of_string, get_initialized_car_timing_dict, get_initialized_car_sector_dict, open_json_as_dict
+from super_taikyu_scraping import LiveOrchestrator
 
 # Note: I believe I am going with the OkayamaDatset project to stream everything.
 
@@ -22,6 +24,15 @@ class ActionsBaseline:
         self.action_baselines: Dict = open_json_as_dict("data/okayama_action_baselines.json")
         self.actions: List[str] = ["Brake", "Throttle", "Speed", "RPM", "Gear"]
 
+        self.web_scraper = LiveOrchestrator(use_time_delay=True)  # We will use our own `await asyncio.sleep(1)` instead of the `time.sleep(1)` in the original code
+        self.scraped_list = []
+
+        self.loop = asyncio.get_event_loop()
+
+
+    def scrape(self):  # This needs to be asynchronous. Async 1.1
+        self.scraped_list = self.web_scraper.run()
+
     def car_iterator(self, short_list: List[str]) -> Generator[List[str], None, None]:
 
         first_backslash_n = find_indices_of_string(short_list, "\n")[0]
@@ -29,14 +40,19 @@ class ActionsBaseline:
         for i in find_indices_of_string(_list=self.short_list, string="\n"):
             yield short_list[i - first_backslash_n:i]  # This is a List with the info for one car
 
-    def compare_scraped_data_with_car_timing_dict(self) -> List[str]:
+    def compare_scraped_data_with_car_timing_dict(self, use_live_list: bool = False) -> List[str]:
         """
         This function compares the SectorTiming values from the scrapred data, to the values stored in the car_timing_dict.
         If the values are different, the car_timing_dict is updated, and we add the car_numer and sector to a stack.
         """
         _stack = []
 
-        for count, car in enumerate(self.car_iterator(self.short_list)):
+        if use_live_list:
+            _list = self.short_list  #i.e. the hardcoded list
+        else:
+            _list = self.scraped_list
+
+        for count, car in enumerate(self.car_iterator(_list)):
             car_num = car[0]
             for sector in self.sectors:
                 scraped_data = car[self.sectors.index(sector) + 10]
@@ -125,7 +141,24 @@ class ActionsBaseline:
         # for i in zip_longest(*gen_list):
         #     print(i)  # Come back to this.
 
+    async def scrape_and_process_data(self):
+        while True:
+            self.scrape()
+            self.iterate_through_stack(
+                self.compare_scraped_data_with_car_timing_dict(use_live_list=False))
+            await asyncio.sleep(1)
 
+    async def stream_data(self):
+        while True:
+            self.start_streaming()
+            await asyncio.sleep(0.25)
+
+    def run(self):
+        task_1 = self.loop.create_task(self.scrape_and_process_data())
+        task_2 = self.loop.create_task(self.stream_data())
+
+        self.loop.run_until_complete(asyncio.gather(task_1, task_2))
+        self.loop.close()
 
 
 def main():
@@ -133,7 +166,10 @@ def main():
     # actions_baslines.parse_sector_timing()
     # print(actions_baslines.car_timing_dict)
     # print(actions_baslines.compare_scraped_data_with_car_timing_dict())
-    actions_baslines.iterate_through_stack(actions_baslines.compare_scraped_data_with_car_timing_dict())
+
+    # actions_baslines.iterate_through_stack(actions_baslines.compare_scraped_data_with_car_timing_dict(use_live_list=False))
+
+    actions_baslines.run()
 
 
 if __name__ == "__main__":

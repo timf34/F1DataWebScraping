@@ -1,7 +1,7 @@
+import asyncio
 import bs4
 import boto3
 import time
-import sys
 
 from bs4 import BeautifulSoup
 from dataclasses import asdict
@@ -32,9 +32,13 @@ class SuperTaikyuScraping:
         self.headless: bool = headless
         self.timing_table: bs4.ResultSet = self.soup.find_all("table", {"class": "table01", "id": "timing_table"})  # This will work for any of the id's in the tables
 
-    def get_html_using_selenium(self, delay: int = 3) -> str:
+    async def get_html_using_selenium(self, delay: int = 3, use_async_delay: bool = True) -> str:
         self.driver.get(self.url)
-        time.sleep(delay)
+        # TODO: note that I'm not sure if this function will work normally now thats its async.
+        if use_async_delay:
+            await asyncio.sleep(delay)
+        else:
+            time.sleep(delay)
         html = self.driver.page_source
         # Note: we are using headless mode solely for continuous updates here... although we could probs use it in general.
         if not self.headless:
@@ -96,16 +100,18 @@ class SuperTaikyuScraping:
 
 
 class SuperTaikyuScrapingHeadless(SuperTaikyuScraping):
-    def __init__(self, print_table: bool = False):
+    def __init__(self, use_time_delay: bool, time_delay: int = 2, print_table: bool = False):
         super().__init__(headless=True)
         options = Options()
         options.headless = True
         self.driver = webdriver.Edge(options=options)
         self.print_table = print_table
+        self.time_delay = time_delay
+        self.use_time_delay = use_time_delay  #
 
     def continuous_update(self, print_time: bool = True) -> TimingTable:
         while True:
-            self.html = self.get_html_using_selenium(delay=2)
+            self.html = self.get_html_using_selenium(delay=self.time_delay, use_async_delay=self.use_time_delay)
             self.soup: BeautifulSoup = BeautifulSoup(self.html, "html.parser")
             self.timing_table: bs4.ResultSet = self.soup.find_all("table", {"class": "table01", "id": "timing_table"})
             table_db = self.get_timing_table(print_tables=self.print_table)
@@ -210,12 +216,12 @@ class ActionsBaseline:
 
 
 class LiveOrchestrator:
-    def __init__(self):
-        self.continuous_scraping = SuperTaikyuScrapingHeadless(print_table=False)
+    def __init__(self, use_time_delay: bool = True, time_delay: int = 3):
+        self.continuous_scraping = SuperTaikyuScrapingHeadless(use_time_delay=use_time_delay, time_delay=time_delay, print_table=False)
         self.convert_to_list = ConvertTimingTableToList(live_data=True)
-        self.mqtt_client = SendTimingTableToMQTT()
+        # self.mqtt_client = SendTimingTableToMQTT()
 
-    def run(self):
+    def run(self, print_info: bool = False) -> List[str]:
         count = 0
         while True:
             # Get our Timing Table object
@@ -225,10 +231,12 @@ class LiveOrchestrator:
             short_list = self.convert_to_list.convert_timing_table_to_short_list(self.convert_to_list.convert_timing_table_to_full_list(timing_table=table_db))
 
             # Send to MQTT topic
-            self.mqtt_client.publish_to_topic(data=short_list)
-            print(short_list)
+            # self.mqtt_client.publish_to_topic(data=short_list)
 
+            if print_info:
+                print(short_list)
             count += 1
+            return short_list
 
 
 def live_loop() -> None:
