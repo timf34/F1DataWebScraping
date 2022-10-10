@@ -64,16 +64,11 @@ class ActionsBaseline:
                 if _stack[i][0] != _stack[i + 1][0]:
                     print(f"Sending {_stack[i][0]} {_stack[i][1]}")
                     # self.mqtt_sender.publish_to_topic(f"{_stack[i][0]} {_stack[i][1]}")
-                    _stack.pop(i)
-                    length -= 1
-                else:
-                    _stack.pop(i)
-                    length -= 1
             else:
                 print(f"Sending last one! {_stack[i][0]} {_stack[i][1]}")
-                # self.mqtt_sender.publish_to_topic(f"{_stack[i][0]} {_stack[i][1]}")
-                _stack.pop(i)
-                length -= 1
+
+            length -= 1
+            _stack.pop(i)
 
 
 def main():
