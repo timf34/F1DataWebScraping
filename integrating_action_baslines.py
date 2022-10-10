@@ -24,17 +24,21 @@ class ActionsBaseline:
         self.action_baselines: Dict = open_json_as_dict("data/okayama_action_baselines.json")
         self.actions: List[str] = ["Brake", "Throttle", "Speed", "RPM", "Gear"]
 
-        self.web_scraper = LiveOrchestrator(use_time_delay=True)  # We will use our own `await asyncio.sleep(1)` instead of the `time.sleep(1)` in the original code
-        self.scraped_list = []
-
         self.loop = asyncio.get_event_loop()
 
+        self.web_scraper = LiveOrchestrator(use_time_delay=True, our_loop=self.loop)  # We will use our own `await asyncio.sleep(1)` instead of the `time.sleep(1)` in the original code
+        self.scraped_list = []
 
-    def scrape(self):  # This needs to be asynchronous. Async 1.1
-        self.scraped_list = self.web_scraper.run()
+
+
+    async def scrape(self):  # This needs to be asynchronous. Async 1.1
+        self.scraped_list = await self.web_scraper.orch_run()
+        print("here is our scraped list:", self.scraped_list)
+        return self.scraped_list
 
     def car_iterator(self, short_list: List[str]) -> Generator[List[str], None, None]:
 
+        print("short_list", short_list)
         first_backslash_n = find_indices_of_string(short_list, "\n")[0]
 
         for i in find_indices_of_string(_list=self.short_list, string="\n"):
@@ -90,8 +94,8 @@ class ActionsBaseline:
             length -= 1
             _stack.pop(i)  # Empties the _stack (although we didn't strictly need to here)
 
-        self.start_streaming()  # This needs to be asynchronous
-        self.start_streaming()
+        # self.start_streaming()  # This needs to be asynchronous
+        # self.start_streaming()
 
     def update_car_sector_dict(self, car_number: Union[str, int], sector: str) -> None:
         """
@@ -135,7 +139,7 @@ class ActionsBaseline:
         for i in self.car_sector_dict:
             print(f"Starting streaming for car {i}")
             # self.mqtt_sender.publish_to_topic(self.car_sector_dict[i]["generator"].__next__())
-            print(f"yas bitches its car numer {i}: ", self.car_sector_dict[i]["generator"].__next__())
+            print(f"yas bitches its car number {i}: ", self.car_sector_dict[i]["generator"].__next__())
             # gen_list.append(self.car_sector_dict[i]["generator"])
 
         # for i in zip_longest(*gen_list):
@@ -143,21 +147,23 @@ class ActionsBaseline:
 
     async def scrape_and_process_data(self):
         while True:
-            self.scrape()
-            self.iterate_through_stack(
-                self.compare_scraped_data_with_car_timing_dict(use_live_list=False))
-            await asyncio.sleep(1)
+
+            await self.scrape()
+            # await asyncio.sleep(3)
+            self.iterate_through_stack(self.compare_scraped_data_with_car_timing_dict(use_live_list=False))
+            # await asyncio.sleep(1)
 
     async def stream_data(self):
+        await asyncio.sleep(20)
         while True:
             self.start_streaming()
             await asyncio.sleep(0.25)
 
-    def run(self):
+    def _run(self):
         task_1 = self.loop.create_task(self.scrape_and_process_data())
         task_2 = self.loop.create_task(self.stream_data())
 
-        self.loop.run_until_complete(asyncio.gather(task_1, task_2))
+        self.loop.run_until_complete(asyncio.gather(task_1))
         self.loop.close()
 
 
@@ -169,7 +175,7 @@ def main():
 
     # actions_baslines.iterate_through_stack(actions_baslines.compare_scraped_data_with_car_timing_dict(use_live_list=False))
 
-    actions_baslines.run()
+    actions_baslines._run()
 
 
 if __name__ == "__main__":
