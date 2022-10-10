@@ -1,6 +1,18 @@
+import json
+import os
+
 import pickle as pkl
 from config import TimingTable
 from typing import List, Dict, Generator, Union
+
+
+def open_json_as_dict(input_path: str) -> Dict:
+    # Ensure file exists
+    if not os.path.exists(input_path):
+        raise Exception(f"File does not exist: {input_path}")
+
+    with open(input_path, "r") as f:
+        return json.load(f)
 
 
 def save_object_using_pickle(output_path: str, object: TimingTable) -> None:
