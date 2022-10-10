@@ -29,39 +29,6 @@ class ActionsBaseline:
         for i in find_indices_of_string(_list=self.short_list, string="\n"):
             yield short_list[i - first_backslash_n:i]  # This is a List with the info for one car
 
-    def parse_sector_timing(self):
-        for count, car in enumerate(self.car_iterator(self.short_list)):
-            print(car)
-
-            # Let's just practice on the first car for now.
-            if count == 0:
-                break
-
-    def iterate_through_action_baseline(self, sector_number: Union[int, str]) -> Generator:
-        """
-        Iterates through a given sector, printing all information from all keys
-        """
-        # for sector in self.action_baselines:
-        #     print(f"Sector: {sector}")
-        #     for i in zip(self.action_baselines[sector][self.actions[0]], self.action_baselines[sector][self.actions[1]], self.action_baselines[sector][self.actions[2]], self.action_baselines[sector][self.actions[3]], self.action_baselines[sector][self.actions[4]]):
-        #         print(i)
-
-        # Now lets do the same as above, but cleaner (again, github copilot is amazing! I need to learn more on pointers in Python)
-
-        # Check if sector_number is an int
-        if isinstance(sector_number, int):
-            sector_number = f"S{sector_number}"
-
-        # Ensure that sector_number is a valid sector (i.e. ["S1", "S2", "S3", "S4"])
-        if sector_number not in self.action_baselines:
-            raise KeyError(f"Invalid sector number: {sector_number}. Must be one of: {list(self.action_baselines.keys())}")
-
-        temp_actions = deepcopy(self.actions)
-        temp_actions.append(f"{sector_number}SecondTiming")
-
-        # Yields the data from the action baselines...
-        yield from zip(*[self.action_baselines[sector_number][action] for action in self.actions])
-
     def compare_scraped_data_with_car_timing_dict(self) -> List[str]:
         """
         This function compares the SectorTiming values from the scrapred data, to the values stored in the car_timing_dict.
@@ -90,6 +57,7 @@ class ActionsBaseline:
 
         This implementation was kinda tricky cause we were deleting from the stack while iterating through it.
         In hindsight I realize we could have just deleted the list afterwards... ah well (I'm very tired still).
+        I didn't even need to strictly delete the values from the list either!
         """
         length = len(_stack)
         i = 0
@@ -117,7 +85,7 @@ class ActionsBaseline:
         if isinstance(car_number, int):
             car_number = str(car_number)
 
-        # Check if sector is equal to the relevant value in self.car_sector_dict
+        # Check if sector is equal to the relevant value in self.car_sector_dict. If not, update + add new generator
         if sector != self.car_sector_dict[car_number]["sector"]:
             self.car_sector_dict[car_number]["sector"] = sector
             self.car_sector_dict[car_number]["generator"] = self.yield_list(sector)
