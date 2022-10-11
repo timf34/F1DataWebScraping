@@ -1,5 +1,6 @@
 import asyncio
 import sys
+import time
 
 from copy import deepcopy
 from itertools import zip_longest
@@ -8,6 +9,7 @@ from typing import List, Dict, Generator, Union
 # Import from the utils.py file in the parent directory
 sys.path.append("")
 from utils import find_indices_of_string, get_initialized_car_timing_dict, get_initialized_car_sector_dict, open_json_as_dict
+from send_mqtt import SendTimingTableToMQTT
 from super_taikyu_scraping import LiveOrchestrator
 
 # Note: I believe I am going with the OkayamaDatset project to stream everything.
@@ -28,6 +30,8 @@ class ActionsBaseline:
 
         self.web_scraper = LiveOrchestrator(use_time_delay=True, our_loop=self.loop)  # We will use our own `await asyncio.sleep(1)` instead of the `time.sleep(1)` in the original code
         self.scraped_list = []
+
+        self.mqtt_sender = SendTimingTableToMQTT()
 
     def car_iterator(self, short_list: List[str], use_live_list: bool = False) -> Generator[List[str], None, None]:
 
@@ -51,11 +55,12 @@ class ActionsBaseline:
         for count, car in enumerate(self.car_iterator(_list)):
             car_num = car[0]
             for sector in self.sectors:
-                scraped_data = car[self.sectors.index(sector) + 10]
+                scraped_data = car[self.sectors.index(sector) + 10]  # This gets the time for a specific sector
                 if scraped_data != str(self.car_timing_dict[car_num][sector]):
                     # print(f"scraped_data {scraped_data} != self.car_timing_dict[car_num][sector] {self.car_timing_dict[car_num][sector]}")
                     # print(f"Updated car_num {car_num} {sector} to {scraped_data}")
                     self.car_timing_dict[car_num][sector] = str(scraped_data)
+                    # TODO: This is where I will also need to append sector timing data + gap lead time data.
                     _stack.append((car_num, sector))
 
         return _stack
@@ -71,6 +76,9 @@ class ActionsBaseline:
         In hindsight I realize we could have just deleted the list afterwards... ah well (I'm very tired still).
         I didn't even need to strictly delete the values from the list either!
         """
+         # TODO: right now this just works with car_numer and sector number... next I need to add the timing so I can
+         #  can stretch/ contract the data.
+
         length = len(_stack)
         i = 0
         while i < length:
@@ -78,7 +86,7 @@ class ActionsBaseline:
                 if _stack[i][0] != _stack[i + 1][0]:
                     print(f"Sending {_stack[i][0]} {_stack[i][1]}")
                     # self.mqtt_sender.publish_to_topic(f"{_stack[i][0]} {_stack[i][1]}")
-                    self.update_car_sector_dict(_stack[i][0], _stack[i][1])
+                    self.update_car_sector_dict(_stack[i][0], _stack[i][1])  #_stack[i][0] is the car number, _stack[i][1] is the sector
             else:
                 print(f"Sending last one! {_stack[i][0]} {_stack[i][1]}")
                 self.update_car_sector_dict(_stack[i][0], _stack[i][1])
@@ -101,18 +109,17 @@ class ActionsBaseline:
         if sector != self.car_sector_dict[car_number]["sector"]:
             # We can't use deepcopy with generators, so we can just leave it as is for the time being. It should work.
             self.car_sector_dict[car_number]["sector"] = sector
-            self.car_sector_dict[car_number]["generator"] = self.yield_list(sector)
+            self.car_sector_dict[car_number]["generator"] = self.yield_list(sector, car_number)
             print(f"We have updated car {car_number} to sector {sector} in our car_sector_dict: {self.car_sector_dict}")
 
-    def yield_list(self, sector: str, basic: bool = False) -> Generator[List[str], None, None]:
+    def yield_list(self, sector: str, car_number: str, basic: bool = False) -> Generator[List[str], None, None]:
         if sector:
             if basic:
                 while True:
                     yield [sector]
             else:
                 if isinstance(sector, int):
-                    sector_number = f"S{sector}"
-
+                    sector = f"S{sector}"
                 # Ensure that sector_number is a valid sector (i.e. ["S1", "S2", "S3", "S4"])
                 if sector not in self.action_baselines:
                     raise KeyError(
@@ -122,9 +129,9 @@ class ActionsBaseline:
                 temp_actions.append(f"{sector}SecondTiming")
 
                 # Yields the data from the action baselines...
-                yield from zip(*[self.action_baselines[sector][action] for action in self.actions])
-                # for i in zip(*[self.action_baselines[sector][action] for action in self.actions]):
-                #    yield i
+                # yield from zip(*[self.action_baselines[sector][action] for action in temp_actions])
+                for i in zip(*[self.action_baselines[sector][action] for action in temp_actions]):
+                    yield [car_number, i[2], i[1], i[0], i[3], i[4], "", "", "", "", "\n"]  # Car_num, speed, throttle, brake, rpm, gear, leader_gap, position_ahead_gap, updated, most_recent_lap_time
         else:
             while True:
                 yield ["no sector... huh?"]
@@ -142,15 +149,21 @@ class ActionsBaseline:
             # TODO: note that this doesn't raise a StopIteration error.
             print(f"yas bitches its car number {i}: ", self.car_sector_dict[i]["generator"].__next__())
             # gen_list.append(self.car_sector_dict[i]["generator"])
+            gen_list.extend(self.car_sector_dict[i]["generator"].__next__())
 
         # for i in zip_longest(*gen_list):
         #     print(i)  # Come back to this.
 
     async def async_start_streaming(self):
+        gen_list = []
         for i in self.car_sector_dict:
             print(f"Streaming car number {i}")
             print(f"yas bitches its car number {i}: ", self.car_sector_dict[i]["generator"].__next__())
-            # await asyncio.sleep(1)
+            gen_list.extend(self.car_sector_dict[i]["generator"].__next__())
+
+        gen_list.extend(("timestamp", time.ctime()))
+        print(gen_list)
+        self.mqtt_sender.publish_to_topic(gen_list)
 
 
     async def scrape_and_process_data(self):
@@ -165,7 +178,7 @@ class ActionsBaseline:
         await asyncio.sleep(20)
         while True:
             await self.async_start_streaming()
-            await asyncio.sleep(0.25)  # Note: this is the correct place. The above func iterates through all cars for a given timestamp.
+            await asyncio.sleep(3.5)  # Note: this is the correct place. The above func iterates through all cars for a given timestamp.
 
     def _run(self):
         task_1 = self.loop.create_task(self.scrape_and_process_data())
