@@ -121,7 +121,7 @@ class ActionsBaseline:
             self.car_sector_dict[car_number]["generator"] = self.yield_list(sector, car_number, sector_time=sector_time)  # TODO: its here that I can probably add the gap lead timing, and most recent lap time. It will be static/ only updated every sector.
             self.car_sector_dict[car_number]["gap_lead_time"] = gap_lead_time
             self.car_sector_dict[car_number]["last_lap_time"] = last_lap_time
-            print(f"We have updated car {car_number} to sector {sector} in our car_sector_dict: {self.car_sector_dict}")
+            # print(f"We have updated car {car_number} to sector {sector} in our car_sector_dict: {self.car_sector_dict}")
 
     def yield_list(self, sector: str, car_number: str, sector_time: str, basic: bool = False) -> Generator[List[str], None, None]:
 
@@ -179,14 +179,14 @@ class ActionsBaseline:
         # for i in zip_longest(*gen_list):
         #     print(i)  # Come back to this.
 
-    async def async_start_streaming(self):
+    def async_start_streaming(self):
         gen_list = []
         gap_lead_time_index = 6
         last_lap_time_index = 9
         for i in self.car_sector_dict:
-            print(f"Streaming car number {i}")
+            # print(f"Streaming car number {i}")
             car_info = self.car_sector_dict[i]["generator"].__next__()
-            print(f"yas bitches its car number {i}: ", car_info)
+            # print(f"yas bitches its car number {i}: ", car_info)
             gen_list.extend(car_info)  # Get the Okayama baseline info.
             gen_list[gap_lead_time_index] = self.car_sector_dict[i]["gap_lead_time"]
             gen_list[last_lap_time_index] = self.car_sector_dict[i]["last_lap_time"]
@@ -200,16 +200,16 @@ class ActionsBaseline:
     async def scrape_and_process_data(self):
         while True:
 
-            await self.scrape()
+            await self.scrape()  # This should be scraping every few seconds. "here is our list" will print when this is.
             # await asyncio.sleep(3)
-            self.iterate_through_stack(self.compare_scraped_data_with_car_timing_dict(use_live_list=True))
+            self.iterate_through_stack(self.compare_scraped_data_with_car_timing_dict(use_live_list=True))  # This part should be continuous. But follow after we scrape.  car_iterator will be called as this is!
             # await asyncio.sleep(1)
 
     async def stream_data(self):
-        await asyncio.sleep(20)
+        await asyncio.sleep(20)  # Initial sleep to allow web scraper to load stuff up. This could probs be shorter.
         while True:
-            await self.async_start_streaming()
-            await asyncio.sleep(3.5)  # Note: this is the correct place. The above func iterates through all cars for a given timestamp.
+            self.async_start_streaming()  # This should be near continuous. Just 0.25 seconds between each publish.
+            await asyncio.sleep(0.25)  # Note: this is the correct place. The above func iterates through all cars for a given timestamp.
 
     def _run(self):
         task_1 = self.loop.create_task(self.scrape_and_process_data())

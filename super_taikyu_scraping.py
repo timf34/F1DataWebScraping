@@ -37,7 +37,7 @@ class SuperTaikyuScraping:
 
     async def async_get_html_using_selenium(self, delay: int = 3, use_async_delay: bool = True) -> str:
         self.driver.get(self.url)
-        await asyncio.sleep(5)
+        await asyncio.sleep(delay)
         html = self.driver.page_source
         # Note: we are using headless mode solely for continuous updates here... although we could probs use it in general.
         if not self.headless:

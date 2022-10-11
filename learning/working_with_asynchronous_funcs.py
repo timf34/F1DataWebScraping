@@ -44,9 +44,13 @@ class WorkingWIthAsyncFuncs:
     async def async_func_2(self):
         while True:
             print("Starting async_func_2")
-            print(self.shared_dict)
+            self.print_info(self.shared_dict)
             await asyncio.sleep(0.5)
             print("Finished async_func_2")
+
+    @staticmethod
+    def print_info(string):
+        print(f"{string}")
 
     def run_using_tasks(self):
         task_1 = self.loop.create_task(self.async_func_1())
