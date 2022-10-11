@@ -48,7 +48,6 @@ class SuperTaikyuScraping:
         self.driver.get(self.url)
         time.sleep(delay)
         html = self.driver.page_source
-        # Note: we are using headless mode solely for continuous updates here... although we could probs use it in general.
         if not self.headless:
             self.driver.close()
         return html
@@ -120,7 +119,6 @@ class SuperTaikyuScrapingHeadless(SuperTaikyuScraping):
     def continuous_update(self, print_time: bool = True) -> TimingTable:
         while True:
             self.html = self.get_html_using_selenium(delay=self.time_delay)
-
             # We need to be able to use self.html in the next line but its a coroutine object
 
             self.soup: BeautifulSoup = BeautifulSoup(self.html, "html.parser")
@@ -238,7 +236,7 @@ class LiveOrchestrator:
             if print_info:
                 print("Here dawg: ", short_list)
             count += 1
-            return short_list
+            # return short_list
 
     async def async_run(self, print_info: bool = False) -> List[str]:
         # This is the async version!
@@ -262,7 +260,9 @@ class LiveOrchestrator:
 
 def live_loop() -> None:
     orchestrator = LiveOrchestrator()
-    orchestrator.non_async_run(print_info=True)
+
+    while True:
+        orchestrator.non_async_run(print_info=True)
 
 
 def main():
