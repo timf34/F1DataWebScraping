@@ -41,6 +41,7 @@ class ActionsBaseline:
         _list = self.scraped_list if use_live_list else self.hardcoded_list
 
         # TODO: note that I will actually just send straight to the MQTT from here, as everything is in the correct format
+        # Wait... how do I get the braking information, etc. here?
         temp_list = deepcopy(_list)
         temp_list.extend(("timestamp", time.ctime()))
         self.mqtt_sender.publish_to_topic(temp_list)
@@ -172,17 +173,19 @@ class ActionsBaseline:
             print(f"Streaming car number {i}")
             print(f"yas bitches its car number {i}: ", self.car_sector_dict[i]["generator"].__next__())
             gen_list.extend(self.car_sector_dict[i]["generator"].__next__())
-            # gen_list.extend((self.car_sector_dict[i]["gap_lead_time"], self.car_sector_dict[i]["last_lap_time"]))
-            print("this is i", i)
-            print("here is the gap lead time and last_lap_time: ", self.car_sector_dict[i]["gap_lead_time"], self.car_sector_dict[i]["last_lap_time"])
-            gen_list[gap_lead_time_index] = self.car_sector_dict[i]["gap_lead_time"]
-            gen_list[last_lap_time_index] = self.car_sector_dict[i]["last_lap_time"]
-            gap_lead_time_index += 10
-            last_lap_time_index += 10
-
-        gen_list.extend(("timestamp", time.ctime()))
-        print("this is the list btw?", gen_list)
-        self.mqtt_sender.publish_to_topic(gen_list)
+        # Note: I am actually going to send the MQTT straight from the car_iterator. Which gets data straight from the
+        # scraper. Ah I can't as this is where I get the okayama basline ofc!
+        #     # gen_list.extend((self.car_sector_dict[i]["gap_lead_time"], self.car_sector_dict[i]["last_lap_time"]))
+        #     print("this is i", i)
+        #     print("here is the gap lead time and last_lap_time: ", self.car_sector_dict[i]["gap_lead_time"], self.car_sector_dict[i]["last_lap_time"])
+        #     gen_list[gap_lead_time_index] = self.car_sector_dict[i]["gap_lead_time"]
+        #     gen_list[last_lap_time_index] = self.car_sector_dict[i]["last_lap_time"]
+        #     gap_lead_time_index += 10
+        #     last_lap_time_index += 10
+        #
+        # gen_list.extend(("timestamp", time.ctime()))
+        # print("this is the list btw?", gen_list)
+        # self.mqtt_sender.publish_to_topic(gen_list)
 
     async def scrape_and_process_data(self):
         while True:
