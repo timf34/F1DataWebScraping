@@ -123,6 +123,8 @@ class ActionsBaseline:
 
                 # Yields the data from the action baselines...
                 yield from zip(*[self.action_baselines[sector][action] for action in self.actions])
+                # for i in zip(*[self.action_baselines[sector][action] for action in self.actions]):
+                #    yield i
         else:
             while True:
                 yield ["no sector... huh?"]
@@ -144,6 +146,13 @@ class ActionsBaseline:
         # for i in zip_longest(*gen_list):
         #     print(i)  # Come back to this.
 
+    async def async_start_streaming(self):
+        for i in self.car_sector_dict:
+            print(f"Streaming car number {i}")
+            print(f"yas bitches its car number {i}: ", self.car_sector_dict[i]["generator"].__next__())
+            # await asyncio.sleep(1)
+
+
     async def scrape_and_process_data(self):
         while True:
 
@@ -155,14 +164,14 @@ class ActionsBaseline:
     async def stream_data(self):
         await asyncio.sleep(20)
         while True:
-            self.start_streaming()
-            await asyncio.sleep(0.25)
+            await self.async_start_streaming()
+            await asyncio.sleep(0.25)  # Note: this is the correct place. The above func iterates through all cars for a given timestamp.
 
     def _run(self):
         task_1 = self.loop.create_task(self.scrape_and_process_data())
         task_2 = self.loop.create_task(self.stream_data())
 
-        self.loop.run_until_complete(asyncio.gather(task_1))
+        self.loop.run_until_complete(asyncio.gather(task_1, task_2))
         self.loop.close()
 
 
