@@ -128,7 +128,7 @@ class ActionsBaseline:
                 yield ["no sector... huh?"]
 
     async def scrape(self):  # This needs to be asynchronous. Async 1.1
-        self.scraped_list = await self.web_scraper.orch_run()
+        self.scraped_list = await self.web_scraper.async_run()
         print("here is our scraped list:", self.scraped_list)
         return self.scraped_list
 

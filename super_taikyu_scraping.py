@@ -119,7 +119,7 @@ class SuperTaikyuScrapingHeadless(SuperTaikyuScraping):
 
     def continuous_update(self, print_time: bool = True) -> TimingTable:
         while True:
-            self.html = self.get_html_using_selenium(delay=self.time_delay, use_async_delay=self.use_time_delay)
+            self.html = self.get_html_using_selenium(delay=self.time_delay)
 
             # We need to be able to use self.html in the next line but its a coroutine object
 
@@ -132,15 +132,7 @@ class SuperTaikyuScrapingHeadless(SuperTaikyuScraping):
 
     async def async_continuous_update(self, print_time: bool = True) -> TimingTable:
         while True:
-            # running_loop = asyncio.get_running_loop()
-            # self.html = running_loop.run_until_complete(asyncio.create_task(self.get_html_using_selenium(delay=self.time_delay, use_async_delay=self.use_time_delay)))
-            # self.html = asyncio.run(self.get_html_using_selenium(delay=self.time_delay, use_async_delay=self.use_time_delay))
-           #  self.html = asyncio.wait_for(asyncio.create_task(self.get_html_using_selenium(delay=self.time_delay, use_async_delay=self.use_time_delay)), timeout=15)
-            # self.html = asyncio.run(self.html)
             self.html = await self.async_get_html_using_selenium(delay=self.time_delay, use_async_delay=self.use_time_delay)
-
-            # We need to be able to use self.html in the next line but its a coroutine object
-
             self.soup: BeautifulSoup = BeautifulSoup(self.html, "html.parser")
             self.timing_table: bs4.ResultSet = self.soup.find_all("table", {"class": "table01", "id": "timing_table"})
             table_db = self.get_timing_table(print_tables=self.print_table)
@@ -248,7 +240,7 @@ class LiveOrchestrator:
             count += 1
             return short_list
 
-    async def orch_run(self, print_info: bool = False) -> List[str]:
+    async def async_run(self, print_info: bool = False) -> List[str]:
         # This is the async version!
         self.continuous_scraping = SuperTaikyuScrapingHeadless(print_table=False, use_time_delay=self.use_time_delay, time_delay=self.time_delay)
         count = 0
