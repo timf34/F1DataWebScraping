@@ -186,8 +186,11 @@ class ConvertTimingTableToList:
         new_shorter_list = []
         temp_short_car = ['' for _ in range(15)]
 
-        indices_we_want = [2, 16, 8, 12, 13, 14, 15]
-        indices_we_want_to_fill = [0, 1, 9, 10, 11, 12, 13]
+        # We also want the gap lead time
+        indices_we_want = [2, 16, 8, 10, 12, 13, 14, 15]
+        indices_we_want_to_fill = [0, 1, 9, 6, 10, 11, 12, 13]  # Note: we only have gap time to leader, not position ahead?
+        # TODO: note that this will only get the distance between any two cars for now. It would be possible to get the
+        #  distance between any two cars, but that would involve more maths which we don't have time for right now.
 
         first_backslash_n = find_indices_of_string(_list=full_list, string="\n")[0]
 
@@ -236,7 +239,7 @@ class LiveOrchestrator:
             if print_info:
                 print("Here dawg: ", short_list)
             count += 1
-            # return short_list
+            return short_list  # Note: this won't run forever as we are returning the list
 
     async def async_run(self, print_info: bool = False) -> List[str]:
         # This is the async version!

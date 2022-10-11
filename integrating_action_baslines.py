@@ -33,17 +33,23 @@ class ActionsBaseline:
 
         self.mqtt_sender = SendTimingTableToMQTT()
 
-    def car_iterator(self, short_list: List[str], use_live_list: bool = False) -> Generator[List[str], None, None]:
+    def car_iterator(self, short_list: List[str], use_live_list: bool = True) -> Generator[List[str], None, None]:
 
         print("car iterator", short_list)
         first_backslash_n = find_indices_of_string(short_list, "\n")[0]
 
         _list = self.scraped_list if use_live_list else self.hardcoded_list
 
+        # TODO: note that I will actually just send straight to the MQTT from here, as everything is in the correct format
+        temp_list = deepcopy(_list)
+        temp_list.extend(("timestamp", time.ctime()))
+        self.mqtt_sender.publish_to_topic(temp_list)
+        print("Send this to the Arduino: ", temp_list)
+
         for i in find_indices_of_string(_list=_list, string="\n"):
             yield short_list[i - first_backslash_n:i]  # This is a List with the info for one car
 
-    def compare_scraped_data_with_car_timing_dict(self, use_live_list: bool = False) -> List[str]:
+    def compare_scraped_data_with_car_timing_dict(self, use_live_list: bool = True) -> List[str]:
         """
         This function compares the SectorTiming values from the scrapred data, to the values stored in the car_timing_dict.
         If the values are different, the car_timing_dict is updated, and we add the car_numer and sector to a stack.
@@ -52,16 +58,19 @@ class ActionsBaseline:
 
         _list = self.scraped_list if use_live_list else self.hardcoded_list
 
-        for count, car in enumerate(self.car_iterator(_list)):
+        for count, car in enumerate(self.car_iterator(_list, use_live_list=True)):
             car_num = car[0]
             for sector in self.sectors:
-                scraped_data = car[self.sectors.index(sector) + 10]  # This gets the time for a specific sector
+                scraped_data = car[self.sectors.index(sector) + 10]  # This gets the time for a specific sector. We only compare the sector times.
                 if scraped_data != str(self.car_timing_dict[car_num][sector]):
                     # print(f"scraped_data {scraped_data} != self.car_timing_dict[car_num][sector] {self.car_timing_dict[car_num][sector]}")
                     # print(f"Updated car_num {car_num} {sector} to {scraped_data}")
                     self.car_timing_dict[car_num][sector] = str(scraped_data)
                     # TODO: This is where I will also need to append sector timing data + gap lead time data.
-                    _stack.append((car_num, sector))
+                    # print("this is our car: ", car)
+                    print("here  is a given car... the scraped data is just the sector time. ", car)
+                    _stack.append((car_num, sector, car[6], car[9])) # Car number, sector, gap lead time, last lap time.
+                    print("and here is the _stack")
 
         return _stack
 
@@ -84,20 +93,19 @@ class ActionsBaseline:
         while i < length:
             if i < length - 1:
                 if _stack[i][0] != _stack[i + 1][0]:
-                    print(f"Sending {_stack[i][0]} {_stack[i][1]}")
+                    print(f"Sending {_stack[i][0]} {_stack[i][1]} {_stack[i][2]} {_stack[i][3]}")
                     # self.mqtt_sender.publish_to_topic(f"{_stack[i][0]} {_stack[i][1]}")
-                    self.update_car_sector_dict(_stack[i][0], _stack[i][1])  #_stack[i][0] is the car number, _stack[i][1] is the sector
+                    self.update_car_sector_dict(_stack[i][0], _stack[i][1], deepcopy(_stack[i][2]), deepcopy(_stack[i][3]))  #_stack[i][0] is the car number, _stack[i][1] is the sector, _stack[i][2] is the gap lead time, _stack[i][3] is the last lap time.
             else:
                 print(f"Sending last one! {_stack[i][0]} {_stack[i][1]}")
-                self.update_car_sector_dict(_stack[i][0], _stack[i][1])
+                self.update_car_sector_dict(_stack[i][0], _stack[i][1], deepcopy(_stack[i][2]), deepcopy(_stack[i][3]))
 
             length -= 1
             _stack.pop(i)  # Empties the _stack (although we didn't strictly need to here)
 
         # self.start_streaming()  # This needs to be asynchronous
-        # self.start_streaming()
 
-    def update_car_sector_dict(self, car_number: Union[str, int], sector: str) -> None:
+    def update_car_sector_dict(self, car_number: Union[str, int], sector: str, gap_lead_time: str, last_lap_time: str) -> None:
         """
         This function starts the streaming of data to our MQTT topic.
         """
@@ -109,7 +117,9 @@ class ActionsBaseline:
         if sector != self.car_sector_dict[car_number]["sector"]:
             # We can't use deepcopy with generators, so we can just leave it as is for the time being. It should work.
             self.car_sector_dict[car_number]["sector"] = sector
-            self.car_sector_dict[car_number]["generator"] = self.yield_list(sector, car_number)
+            self.car_sector_dict[car_number]["generator"] = self.yield_list(sector, car_number)  # TODO: its here that I can probably add the gap lead timing, and most recent lap time. It will be static/ only updated every sector.
+            self.car_sector_dict[car_number]["gap_lead_time"] = gap_lead_time
+            self.car_sector_dict[car_number]["last_lap_time"] = last_lap_time
             print(f"We have updated car {car_number} to sector {sector} in our car_sector_dict: {self.car_sector_dict}")
 
     def yield_list(self, sector: str, car_number: str, basic: bool = False) -> Generator[List[str], None, None]:
@@ -156,22 +166,30 @@ class ActionsBaseline:
 
     async def async_start_streaming(self):
         gen_list = []
+        gap_lead_time_index = 6
+        last_lap_time_index = 9
         for i in self.car_sector_dict:
             print(f"Streaming car number {i}")
             print(f"yas bitches its car number {i}: ", self.car_sector_dict[i]["generator"].__next__())
             gen_list.extend(self.car_sector_dict[i]["generator"].__next__())
+            # gen_list.extend((self.car_sector_dict[i]["gap_lead_time"], self.car_sector_dict[i]["last_lap_time"]))
+            print("this is i", i)
+            print("here is the gap lead time and last_lap_time: ", self.car_sector_dict[i]["gap_lead_time"], self.car_sector_dict[i]["last_lap_time"])
+            gen_list[gap_lead_time_index] = self.car_sector_dict[i]["gap_lead_time"]
+            gen_list[last_lap_time_index] = self.car_sector_dict[i]["last_lap_time"]
+            gap_lead_time_index += 10
+            last_lap_time_index += 10
 
         gen_list.extend(("timestamp", time.ctime()))
-        print(gen_list)
+        print("this is the list btw?", gen_list)
         self.mqtt_sender.publish_to_topic(gen_list)
-
 
     async def scrape_and_process_data(self):
         while True:
 
             await self.scrape()
             # await asyncio.sleep(3)
-            self.iterate_through_stack(self.compare_scraped_data_with_car_timing_dict(use_live_list=False))
+            self.iterate_through_stack(self.compare_scraped_data_with_car_timing_dict(use_live_list=True))
             # await asyncio.sleep(1)
 
     async def stream_data(self):
