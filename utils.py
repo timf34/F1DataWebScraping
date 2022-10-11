@@ -1,9 +1,11 @@
+from copy import deepcopy
 import json
+import numpy as np
 import os
 
 import pickle as pkl
 from config import TimingTable
-from typing import List, Dict, Generator, Union
+from typing import List, Dict, Generator, Union, Tuple
 
 
 def open_json_as_dict(input_path: str) -> Dict:
@@ -72,9 +74,30 @@ def get_initialized_car_sector_dict() -> Dict[str, Dict[str, Union[str, Generato
     return car_sector_dict
 
 
+def create_a_larger_extrapolated_x_y_axis(x: List[float], y: List[float], difference: float) -> Tuple[List[float], List[float]]:
+    """
+        This function takes in a list of x and y values and returns a new list of x and y values where the x-axis
+        is 2 seconds longer, and matches the y-axis values accordingly.
+    """
+    interval = 0.25
+    # Add the difference (in time) to the last value of x.
+    x[-1] += difference # This works for adding or subtracting!
+
+    # Create a new list of x values with this new interval
+    new_x = np.arange(x[0], x[-1] + interval, interval)
+
+    # Change the number of elements in y to match the number of elements in x
+    new_y = np.interp(np.linspace(0, len(y) - 1, len(new_x)), np.arange(len(y)), y)
+
+    return new_x, new_y
+
+
 def main():
-    x = get_initialized_car_sector_dict()
-    print(x)
+    # x = get_initialized_car_sector_dict()
+    # print(x)
+
+    x = open_json_as_dict("data/okayama_action_baselines.json")
+    print(type(x["S1"]["S1SecondTiming"][2]))
 
 
 if __name__ == "__main__":
