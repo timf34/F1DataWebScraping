@@ -243,7 +243,9 @@ class LiveOrchestrator:
 
     async def async_run(self, print_info: bool = False) -> List[str]:
         # This is the async version!
+        print("Time at the start of async run: ", time.ctime())
         self.continuous_scraping = SuperTaikyuScrapingHeadless(print_table=False, use_time_delay=self.use_time_delay, time_delay=self.time_delay)
+        print("Time after creating continuous scraping: ", time.ctime())
         count = 0
         while True:
             # Get our Timing Table object
@@ -251,6 +253,7 @@ class LiveOrchestrator:
 
             # Get our Timing Table object
             short_list = self.convert_to_list.convert_timing_table_to_short_list(self.convert_to_list.convert_timing_table_to_full_list(timing_table=table_db))
+            print("Time after converting to short list (i.e. we are done here!): ", time.ctime())
 
             # Send to MQTT topic
             # self.mqtt_client.publish_to_topic(data=short_list)

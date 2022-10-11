@@ -37,7 +37,7 @@ class ActionsBaseline:
 
     def car_iterator(self, short_list: List[str], use_live_list: bool = True) -> Generator[List[str], None, None]:
 
-        print("car iterator", short_list)
+        print("car iterator", time.ctime(), short_list)
         first_backslash_n = find_indices_of_string(short_list, "\n")[0]
 
         _list = self.scraped_list if use_live_list else self.hardcoded_list
@@ -50,6 +50,7 @@ class ActionsBaseline:
         This function compares the SectorTiming values from the scrapred data, to the values stored in the car_timing_dict.
         If the values are different, the car_timing_dict is updated, and we add the car_numer and sector to a stack.
         """
+        print("We are in the start of compaire_scraped_data_with_car_timing_dict, time:", time.ctime())
         _stack = []
 
         _list = self.scraped_list if use_live_list else self.hardcoded_list
@@ -64,10 +65,10 @@ class ActionsBaseline:
                     self.car_timing_dict[car_num][sector] = str(scraped_data)
                     # TODO: This is where I will also need to append sector timing data + gap lead time data.
                     # print("this is our car: ", car)
-                    print("here  is a given car... the scraped data is just the sector time. ", car)
+                    # print("here  is a given car... the scraped data is just the sector time. ", car)
                     # Note: we walso need the sector times here! So we can expand/ contract the data.
                     _stack.append((car_num, sector, car[6], car[9], car[10:14])) # Car number, sector, gap lead time, last lap time.
-                    print("and here is the _stack")
+                    # print("and here is the _stack")
 
         return _stack
 
@@ -163,8 +164,7 @@ class ActionsBaseline:
 
     async def scrape(self):  # This needs to be asynchronous. Async 1.1
         self.scraped_list = await self.web_scraper.async_run()
-        print("here is our scraped list:", self.scraped_list)
-        return self.scraped_list
+        print("here is our scraped list:", time.ctime(), self.scraped_list)
 
     def start_streaming(self) -> None:
         gen_list = []
@@ -180,6 +180,7 @@ class ActionsBaseline:
         #     print(i)  # Come back to this.
 
     def async_start_streaming(self):
+        print("We are in async_start_streaming at time: ", time.ctime())
         gen_list = []
         gap_lead_time_index = 6
         last_lap_time_index = 9
@@ -194,12 +195,13 @@ class ActionsBaseline:
             last_lap_time_index += 10
 
         gen_list.extend(("timestamp", time.ctime()))
-        print("this is the list btw?", gen_list)
+        print("this is the list btw and time", time.ctime(), gen_list)
         self.mqtt_sender.publish_to_topic(gen_list)
 
     async def scrape_and_process_data(self):
         while True:
 
+            # We will print the time at the start and end of each of these functions, to try and see where the lag is.
             await self.scrape()  # This should be scraping every few seconds. "here is our list" will print when this is.
             # await asyncio.sleep(3)
             self.iterate_through_stack(self.compare_scraped_data_with_car_timing_dict(use_live_list=True))  # This part should be continuous. But follow after we scrape.  car_iterator will be called as this is!
