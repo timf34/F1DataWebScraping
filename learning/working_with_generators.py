@@ -54,10 +54,41 @@ class WorkingWithGenerators:
         for i in zip_longest(*gens):
             print(i)
 
+    def simple_generator(self):
+        for i in range(10):
+            yield i
+
+    def last_value_from_spent_generator(self):
+        """
+        This function takes in a generator, and prints the last value from the generator
+        """
+        *_, last = self.simple_generator()
+        print(last)
+
+        # And again
+        *_, last = self.simple_generator()
+        print(last)
+
+        # Now lets iterate through the generator until we get a StopIteration error
+        gen = self.simple_generator()
+        while True:
+            try:
+                print(next(gen))
+            except StopIteration:
+                break
+
+        # Now lets try to get the last value again, from gen(). This will fail because the generator is spent
+        # But we can use itertools.tee to create a copy of the generator, and then use the copy to get the last value
+        gen = self.simple_generator()
+        gen_copy = itertools.tee(gen, 1)[0]
+        *_, last = gen_copy
+
+
 
 def main():
     working_with_generators = WorkingWithGenerators()
-    working_with_generators.example_using_next()
+    # working_with_generators.example_using_next()
+    working_with_generators.last_value_from_spent_generator()
 
 
 if __name__ == "__main__":

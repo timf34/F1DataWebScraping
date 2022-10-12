@@ -23,7 +23,9 @@ class SuperTaikyuScraping:
             self.driver = webdriver.Edge()
             self.html: str = self.get_html_using_selenium()
         elif use_async:
-            self.driver = webdriver.Edge()
+            # I think this was where the head was coming in through! I'm not supposed to initlize the Driver here!
+            # It's inherited from the child class or whatever.
+            # self.driver = webdriver.Edge()
             # self.html: str = await self.async_get_html_using_selenium()
             self.html = ""
         else:

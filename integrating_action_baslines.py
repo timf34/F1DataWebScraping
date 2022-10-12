@@ -16,6 +16,8 @@ from super_taikyu_scraping import LiveOrchestrator
 
 # Note: I believe I am going with the OkayamaDatset project to stream everything.
 
+STREAMING_DELAY = 0.23
+
 
 class ActionsBaseline:
     def __init__(self):
@@ -93,16 +95,20 @@ class ActionsBaseline:
         while i < length:
             if i < length - 1:
                 if _stack[i][0] != _stack[i + 1][0]:
-                    print(f"Sending {_stack[i][0]} {_stack[i][1]} {_stack[i][2]} {_stack[i][3]}")
+
+                    # If _stack[i][1] is "S1", then we need to change it to "S2". If its "S2" -> "S3", etc. If its "S4" -> "S1"
+                    next_sector = self.sectors[self.sectors.index(_stack[i][1]) + 1] if _stack[i][1] != "S4" else "S1"
+
+                    print(f"Sending {_stack[i][0]} {next_sector} {_stack[i][2]} {_stack[i][3]}")
 
                     # Note: _stack[i][4] is a list of the sector times. We will match the time with the sector number.
-                    sector_time = _stack[i][4][self.sectors.index(_stack[i][1])]
+                    sector_time = _stack[i][4][self.sectors.index(next_sector)]
 
-                    self.update_car_sector_dict(_stack[i][0], _stack[i][1], deepcopy(_stack[i][2]), deepcopy(_stack[i][3]), sector_time)  #_stack[i][0] is the car number, _stack[i][1] is the sector, _stack[i][2] is the gap lead time, _stack[i][3] is the last lap time.
+                    self.update_car_sector_dict(_stack[i][0], next_sector, deepcopy(_stack[i][2]), deepcopy(_stack[i][3]), sector_time)  #_stack[i][0] is the car number, next_sector is the next nexsector, _stack[i][2] is the gap lead time, _stack[i][3] is the last lap time.
             else:
-                print(f"Sending last one! {_stack[i][0]} {_stack[i][1]}")
-                sector_time = _stack[i][4][self.sectors.index(_stack[i][1])]
-                self.update_car_sector_dict(_stack[i][0], _stack[i][1], deepcopy(_stack[i][2]), deepcopy(_stack[i][3]), sector_time)
+                print(f"Sending last one! {_stack[i][0]} {next_sector}")
+                sector_time = _stack[i][4][self.sectors.index(next_sector)]
+                self.update_car_sector_dict(_stack[i][0], next_sector, deepcopy(_stack[i][2]), deepcopy(_stack[i][3]), sector_time)
 
             length -= 1
             _stack.pop(i)  # Empties the _stack (although we didn't strictly need to here)
@@ -196,14 +202,15 @@ class ActionsBaseline:
                 car_info = self.car_sector_dict[i]["generator"].__next__()
             # print(f"yas bitches its car number {i}: ", car_info)
                 gen_list.extend(car_info)  # Get the Okayama baseline info.
-                gen_list[gap_lead_time_index] = self.car_sector_dict[i]["gap_lead_time"]
-                gen_list[last_lap_time_index] = self.car_sector_dict[i]["last_lap_time"]
+                # gen_list[gap_lead_time_index] = self.car_sector_dict[i]["gap_lead_time"]
+                # gen_list[last_lap_time_index] = self.car_sector_dict[i]["last_lap_time"]
             except StopIteration:
                 print(f"We have reached the end of car number {i} for this sector")
                 # So lets make a copy of the generator, and get the last value from that to use instead
-                copy_of_gen = itertools.tee(self.car_sector_dict[i]["generator"], 1)[0]
-                *_, last = copy_of_gen
-                gen_list.extend(last)  # Get the Okayama baseline info.
+                # Note: its already spent here, I'll need to do something else... For now lets just default to 0 values!
+                # copy_of_gen = itertools.tee(self.car_sector_dict[i]["generator"], 1)[0]
+                # *_, last = copy_of_gen
+                gen_list.extend((i, "", "", "", "", "", "", "", "", "", "\n"))  # Get the Okayama baseline info.
 
             gen_list[gap_lead_time_index] = self.car_sector_dict[i]["gap_lead_time"]
             gen_list[last_lap_time_index] = self.car_sector_dict[i]["last_lap_time"]
@@ -227,7 +234,7 @@ class ActionsBaseline:
         await asyncio.sleep(20)  # Initial sleep to allow web scraper to load stuff up. This could probs be shorter.
         while True:
             self.async_start_streaming()  # This should be near continuous. Just 0.25 seconds between each publish.
-            await asyncio.sleep(0.25)  # Note: this is the correct place. The above func iterates through all cars for a given timestamp.
+            await asyncio.sleep(STREAMING_DELAY)  # Note: this is the correct place. The above func iterates through all cars for a given timestamp.
 
     def _run(self):
         task_1 = self.loop.create_task(self.scrape_and_process_data())
