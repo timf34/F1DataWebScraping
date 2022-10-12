@@ -1,6 +1,8 @@
 import asyncio
+import itertools
 import sys
 import time
+
 
 from copy import deepcopy
 from itertools import zip_longest
@@ -156,6 +158,7 @@ class ActionsBaseline:
 
                 # Yields the data from the action baselines...
                 # yield from zip(*[self.action_baselines[sector][action] for action in temp_actions])
+                temp_dict = deepcopy(temp_dict)
                 for i in zip(*[temp_dict[sector][action] for action in temp_actions]):
                     yield [car_number, i[2], i[1], i[0], i[3], i[4], "", "", "", "", "\n"]  # Car_num, speed, throttle, brake, rpm, gear, leader_gap, position_ahead_gap, updated, most_recent_lap_time
         else:
@@ -172,9 +175,12 @@ class ActionsBaseline:
             print(f"Starting streaming for car {i}")
             # self.mqtt_sender.publish_to_topic(self.car_sector_dict[i]["generator"].__next__())
             # TODO: note that this doesn't raise a StopIteration error.
-            print(f"yas bitches its car number {i}: ", self.car_sector_dict[i]["generator"].__next__())
-            # gen_list.append(self.car_sector_dict[i]["generator"])
-            gen_list.extend(self.car_sector_dict[i]["generator"].__next__())
+            try:
+                print(f"yas bitches its car number {i}: ", self.car_sector_dict[i]["generator"].__next__())
+            # If we want to prevent StopIteration now we should...
+                gen_list.extend(self.car_sector_dict[i]["generator"].__next__())
+            except StopIteration:
+                print(f"We have reached the end of car number {i} for this sector")
 
         # for i in zip_longest(*gen_list):
         #     print(i)  # Come back to this.
@@ -186,9 +192,19 @@ class ActionsBaseline:
         last_lap_time_index = 9
         for i in self.car_sector_dict:
             # print(f"Streaming car number {i}")
-            car_info = self.car_sector_dict[i]["generator"].__next__()
+            try:
+                car_info = self.car_sector_dict[i]["generator"].__next__()
             # print(f"yas bitches its car number {i}: ", car_info)
-            gen_list.extend(car_info)  # Get the Okayama baseline info.
+                gen_list.extend(car_info)  # Get the Okayama baseline info.
+                gen_list[gap_lead_time_index] = self.car_sector_dict[i]["gap_lead_time"]
+                gen_list[last_lap_time_index] = self.car_sector_dict[i]["last_lap_time"]
+            except StopIteration:
+                print(f"We have reached the end of car number {i} for this sector")
+                # So lets make a copy of the generator, and get the last value from that to use instead
+                copy_of_gen = itertools.tee(self.car_sector_dict[i]["generator"], 1)[0]
+                *_, last = copy_of_gen
+                gen_list.extend(last)  # Get the Okayama baseline info.
+
             gen_list[gap_lead_time_index] = self.car_sector_dict[i]["gap_lead_time"]
             gen_list[last_lap_time_index] = self.car_sector_dict[i]["last_lap_time"]
             gap_lead_time_index += 10
