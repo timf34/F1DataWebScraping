@@ -22,7 +22,7 @@ class WorkingWIthAsyncFuncs:
     async def async_func_1(self):
         """
         We have set this up so that this function edits a copy of the shared dictionary, and then updates the shared
-        one only when its done.
+        one only when it's done.
         """
 
         print("Starting async_func_1")
