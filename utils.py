@@ -74,6 +74,20 @@ def get_initialized_car_sector_dict() -> Dict[str, Dict[str, Union[str, Generato
     return car_sector_dict
 
 
+def get_initializied_car_dict_no_generator() -> Dict:
+    """
+        This creates a dict to store the ActionBaslines dict for each car number
+    """
+    car_sector_dict: Dict[str, Dict[str, str]] = {}
+
+    with open(r"C:\Users\timf3\PycharmProjects\F1DataWebScraping\data\car_nums.txt", "r") as f:
+        car_nums = f.readlines()
+
+    for car_num in car_nums:
+        car_sector_dict[car_num.replace("\n", "")] = {"sector": "0.", "action_baselines": "_"}
+
+    return car_sector_dict
+
 def create_a_larger_extrapolated_x_y_axis(x: List[float], y: List[float], difference: float) -> Tuple[List[float], List[float]]:
     """
         This function takes in a list of x and y values and returns a new list of x and y values where the x-axis
