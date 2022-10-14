@@ -132,6 +132,19 @@ def create_a_larger_extrapolated_x_y_axis(x: List[float], y: List[float], differ
     return new_x, new_y
 
 
+def create_manual_soln_dict():
+
+    # Get list of car numbers
+    with open(r"C:\Users\timf3\PycharmProjects\F1DataWebScraping\data\car_nums.txt", "r") as f:
+        car_nums = f.readlines()
+
+    # Create a dict of car numbers
+    car_nums_dict = {"car_numbers" : {car_num.replace("\n", ""): ["31", "32", "33", "34", "1'18 (most recent time)", "gap to leader"] for car_num in car_nums}}
+    print(car_nums_dict)
+
+    with open("data/manual_soln_dict.json", "w") as f:
+        json.dump(car_nums_dict, f, indent=1)
+
 def main():
     # x = get_initialized_car_sector_dict()
     # print(x)
@@ -140,7 +153,7 @@ def main():
     # print(type(x["S1"]["S1SecondTiming"][2]))
 
     print(get_initialized_manual_soln_car_sector_dict())
-
+    # create_and_write_to_json_file()
 
 if __name__ == "__main__":
     main()
