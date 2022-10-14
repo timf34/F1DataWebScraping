@@ -25,6 +25,9 @@ class ManualSolution:
         self.actions: List[str] = ["Brake", "Throttle", "Speed", "RPM", "Gear"]
         self.sector_baseline_times = {"S1": 29.5, "S2": 25.75, "S3": 36.25, "S4": 17.25}
 
+        self.loop = asyncio.get_event_loop()
+
+
     def read_input(self) -> Dict[str, str]:
         """
             This function reads in the user input and returns a list of tuples.
@@ -64,9 +67,27 @@ class ManualSolution:
 
             self.car_info_list = deepcopy(temp_list)
             print(self.car_info_list)
-            time.sleep(2)
             if not_continuous:
                 return
+
+    async def async_read_file_continuously(self) -> None:
+        while True:
+            temp_list = []
+            with open(self.temp_json_path, "r") as f:
+                temp_dict = json.load(f)
+                for car_num in temp_dict["car_number"]:
+                    temp_list.append(car_num)
+                    temp_list.extend([temp_dict["car_number"][car_num][-1]])  # Most recent time
+                    temp_list.extend([temp_dict["car_number"][car_num][4]])  # Gap to leader
+                    temp_list.extend(['', '', '', '', '', '', '', temp_dict["car_number"][car_num][0],
+                                      temp_dict["car_number"][car_num][1], temp_dict["car_number"][car_num][2],
+                                      temp_dict["car_number"][car_num][3],
+                                      temp_dict["car_number"][car_num][4]])  # Sector times
+                    temp_list.extend("\n")
+
+            self.car_info_list = deepcopy(temp_list)
+            print(self.car_info_list)
+            await asyncio.sleep(1)
 
     def iterate_car_sector_timings(self) -> None:
         print(self.car_sector_dict)
@@ -234,13 +255,21 @@ class ManualSolution:
         print("this is the list btw and time", time.ctime(), gen_list)
         # self.mqtt_sender.publish_to_topic(gen_list)
 
+    def run_asynchronously(self):
+        task_1 = self.loop.create_task(self.async_read_file_continuously())
+
+        self.loop.run_until_complete(asyncio.gather(task_1))
+        self.loop.close()
+
+
 
 def main():
     manual_solution = ManualSolution()
     # manual_solution.read_input()
-    manual_solution.read_file_continuously(not_continuous=True)
+    # manual_solution.read_file_continuously(not_continuous=True)
     # manual_solution.iterate_car_sector_timings()
-    manual_solution.iterate_through_stack(manual_solution.compare_scraped_data_with_car_timing_dict())
+    # manual_solution.iterate_through_stack(manual_solution.compare_scraped_data_with_car_timing_dict())
+    manual_solution.run_asynchronously()
 
     while True:
         manual_solution.start_streaming()
