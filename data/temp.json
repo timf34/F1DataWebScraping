@@ -1,4 +1,10 @@
 {
-  "name": "Mia",
-  "age": 25
+  "car_number": {
+    "104": ["31", "32", "33", "34", "1'18 (most recent time)", "gap to leader"],
+    "11": ["37", "38", "39", "30", "1'35 (most recent time)", "gap to leader"],
+    "104": ["31", "32", "33", "34", "1'18 (most recent time)", "gap to leader"],
+    "11": ["37", "38", "39", "30", "1'35 (most recent time)", "gap to leader"]
+  },
+  "note" : "The inputs above correspond to S1 time, S2 time, S3 time, S4 time, most_recent_time and speed. Note that we'll need to integrate the gap to leader somehow as well... we can come back to this",
+  "note2" : "also note that speed doesn't matter here as it is in the Action Baselines"
 }
