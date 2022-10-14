@@ -26,6 +26,7 @@ class ManualSolution:
         self.sector_baseline_times = {"S1": 29.5, "S2": 25.75, "S3": 36.25, "S4": 17.25}
 
         self.loop = asyncio.get_event_loop()
+        self.mqtt_sender = SendTimingTableToMQTT()
 
 
     def read_input(self) -> Dict[str, str]:
@@ -253,23 +254,28 @@ class ManualSolution:
 
         gen_list.extend(("timestamp", time.ctime()))
         print("this is the list btw and time", time.ctime(), gen_list)
-        # self.mqtt_sender.publish_to_topic(gen_list)
+        self.mqtt_sender.publish_to_topic(data=gen_list)
+
+    async def async_streaming(self):
+        await asyncio.sleep(3)
+        while True:
+            self.start_streaming()
+            await asyncio.sleep(0.22)
 
     def run_asynchronously(self):
         task_1 = self.loop.create_task(self.async_read_file_continuously())
+        task_2 = self.loop.create_task(self.async_streaming())
 
-        self.loop.run_until_complete(asyncio.gather(task_1))
+        self.loop.run_until_complete(asyncio.gather(task_1, task_2))
         self.loop.close()
-
-
 
 def main():
     manual_solution = ManualSolution()
     # manual_solution.read_input()
-    # manual_solution.read_file_continuously(not_continuous=True)
+    manual_solution.read_file_continuously(not_continuous=True)
     # manual_solution.iterate_car_sector_timings()
-    # manual_solution.iterate_through_stack(manual_solution.compare_scraped_data_with_car_timing_dict())
-    manual_solution.run_asynchronously()
+    manual_solution.iterate_through_stack(manual_solution.compare_scraped_data_with_car_timing_dict())
+    # manual_solution.run_asynchronously()
 
     while True:
         manual_solution.start_streaming()
