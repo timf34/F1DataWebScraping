@@ -74,6 +74,32 @@ def get_initialized_car_sector_dict() -> Dict[str, Dict[str, Union[str, Generato
     return car_sector_dict
 
 
+def get_initialized_manual_soln_car_sector_dict() -> Dict[str, Dict[str, Union[str, Generator]]]:
+    """
+        This dict is for enumerating through a given car's sector times via ActionBaslines
+
+        Its structure is {car_num : {sector: {"S1": generator, "S2": generator, "S3": generator, "S4": generator}}}
+    """
+    car_sector_dict: Dict[str, Dict[str, str]] = {}
+
+    sectors = ["S1", "S2", "S3", "S4"]
+
+    with open(r"C:\Users\timf3\PycharmProjects\F1DataWebScraping\data\car_nums.txt", "r") as f:
+        car_nums = f.readlines()
+
+    def gen():
+        yield "empty temp generator"
+
+    # for car_num in car_nums:
+    #     car_sector_dict[car_num.replace("\n", "")] = {"sector": {}}
+    #     for sector in sectors:
+    #         car_sector_dict[car_num.replace("\n", "")]["sector"][sector] = gen()
+
+    # Refactor the above loop
+    car_sector_dict = {car_num.replace("\n", ""): {"sector": {sector: gen() for sector in sectors}} for car_num in car_nums}
+
+    return car_sector_dict
+
 def get_initializied_car_dict_no_generator() -> Dict:
     """
         This creates a dict to store the ActionBaslines dict for each car number
@@ -110,8 +136,10 @@ def main():
     # x = get_initialized_car_sector_dict()
     # print(x)
 
-    x = open_json_as_dict("data/okayama_action_baselines.json")
-    print(type(x["S1"]["S1SecondTiming"][2]))
+    # x = open_json_as_dict("data/okayama_action_baselines.json")
+    # print(type(x["S1"]["S1SecondTiming"][2]))
+
+    print(get_initialized_manual_soln_car_sector_dict())
 
 
 if __name__ == "__main__":
