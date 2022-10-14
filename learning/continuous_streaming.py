@@ -2,8 +2,9 @@ import asyncio
 from copy import deepcopy
 import time
 
-from typing import Dict, List
+from typing import Dict, List, Generator
 
+# We will now use Generators to make this a continuous stream
 
 
 class ContinuousStreaming:
@@ -34,18 +35,23 @@ class ContinuousStreaming:
         # time (i.e. it steps through the indices of all the actions in order)
         # i.e. 1 Brake S1 1, 2 Brake S2 1, 1 Throttle
 
+    def yield_list(self):
+        temp_dict = deepcopy(self.sample_dict)
 
+        for sector in self.sectors:
+            for action in self.actions:
+                for i in zip([*temp_dict[sector][action]]):
+                    yield i, sector, action
 
-
-
-
-
-
+    def print_yield_list(self):
+        for i in self.yield_list():
+            print(i)
 
 
 def main():
     x = ContinuousStreaming()
-    x.loop_through_dict_forever()
+    # x.loop_through_dict_forever()
+    x.print_yield_list()
 
 
 if __name__ == '__main__':
