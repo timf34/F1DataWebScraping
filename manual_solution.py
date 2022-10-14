@@ -56,13 +56,15 @@ class ManualSolution:
                 temp_dict = json.load(f)
                 for car_num in temp_dict["car_number"]:
                     temp_list.append(car_num)
-                    temp_list.extend([temp_dict["car_number"][car_num][-1]]) # Speed
-                    temp_list.extend(['', '', '', '', '', '', '', '', temp_dict["car_number"][car_num][0], temp_dict["car_number"][car_num][1], temp_dict["car_number"][car_num][2], temp_dict["car_number"][car_num][3], temp_dict["car_number"][car_num][4]]) # Sector times
+                    temp_list.extend([temp_dict["car_number"][car_num][-1]]) # Most recent time
+                    temp_list.extend([temp_dict["car_number"][car_num][4]]) # Gap to leader
+                    temp_list.extend(['', '', '', '', '', '', '', temp_dict["car_number"][car_num][0], temp_dict["car_number"][car_num][1], temp_dict["car_number"][car_num][2], temp_dict["car_number"][car_num][3], temp_dict["car_number"][car_num][4]]) # Sector times
                     temp_list.extend("\n")
-                time.sleep(0.2)
+                print(temp_list)
 
             self.car_info_list = deepcopy(temp_list)
             print(self.car_info_list)
+            time.sleep(2)
             if not_continuous:
                 return
 
@@ -99,7 +101,7 @@ class ManualSolution:
                 scraped_data = car[self.sectors.index(sector) + 10]  # This gets the time for a specific sector. We only compare the sector times.
                 if scraped_data != str(self.car_timing_dict[car_num][sector]):
                     self.car_timing_dict[car_num][sector] = str(scraped_data)
-                    _stack.append((car_num, sector, car[1], car[9], car[10:14])) # Car number, sector, gap lead time, last lap time, sector times (S1, S2, S3, S4) (for expandnig/ contracting)
+                    _stack.append((car_num, sector, car[1], car[2], car[10:14])) # Car number, sector, gap lead time, last lap time, sector times (S1, S2, S3, S4) (for expandnig/ contracting)
                     # Current format: (car num, sector, gap to leader, "", [S1, S2, S3, S4])
         return _stack
 
@@ -123,9 +125,10 @@ class ManualSolution:
 
                     self.update_car_sector_dict(_stack[i][0], next_sector, deepcopy(_stack[i][2]), deepcopy(_stack[i][3]), sector_time)  #_stack[i][0] is the car number, next_sector is the next nexsector, _stack[i][2] is the gap lead time, _stack[i][3] is the last lap time.
             else:
-                print(f"Sending last one! {_stack[i][0]} {next_sector}")
+                # print(f"Sending last one! {_stack[i][0]} {next_sector}")
                 sector_time = _stack[i][4][self.sectors.index(next_sector)]
-                self.update_car_sector_dict(_stack[i][0], next_sector, deepcopy(_stack[i][2]), deepcopy(_stack[i][3]), sector_time)
+                self.update_car_sector_dict(car_number=_stack[i][0], sector=next_sector, gap_lead_time=deepcopy(_stack[i][2]),
+                                            last_lap_time=deepcopy(_stack[i][3]), sector_time=sector_time)
 
             length -= 1
             _stack.pop(i)  # Empties the _stack (although we didn't strictly need to here)
@@ -143,12 +146,11 @@ class ManualSolution:
         if sector != self.car_sector_dict[car_number]["sector"]:
             # We can't use deepcopy with generators, so we can just leave it as is for the time being. It should work.
             self.car_sector_dict[car_number]["sector"] = sector
-            self.car_sector_dict[car_number]["generator"] = self.yield_list(sector, car_number,
-                                                                            sector_time=sector_time)  # TODO: its here that I can probably add the gap lead timing, and most recent lap time. It will be static/ only updated every sector.
+            self.car_sector_dict[car_number]["generator"] = self.yield_list(sector, car_number, sector_time=sector_time)
             self.car_sector_dict[car_number]["gap_lead_time"] = gap_lead_time
             self.car_sector_dict[car_number]["last_lap_time"] = last_lap_time
 
-    def yield_list(self, sector: str, car_number: str, sector_time: str, basic: bool = False) -> Generator[List[str], None, None]:
+    def yield_list(self, sector: str, car_number: str, sector_time: str=None, basic: bool = False) -> Generator[List[str], None, None]:
         """
             Yields from self.action_baselines
 
@@ -167,11 +169,13 @@ class ManualSolution:
         try:
             difference = float(sector_time) - float(self.sector_baseline_times[sector])
         except Exception:
+            print("here is the sector time", sector_time)
             print(f"Wasn't able to find the time delta between baseline and car_number {car_number}, the sector time was {sector_time}")
             difference = 0
 
-        for action in self.actions:
-            temp_dict[sector][f"{sector}SecondTiming"], temp_dict[sector][action] = create_a_larger_extrapolated_x_y_axis(temp_dict[sector][f"{sector}SecondTiming"], temp_dict[sector][action], difference)
+        if difference != 0 or sector_time is not None:
+            for action in self.actions:
+                temp_dict[sector][f"{sector}SecondTiming"], temp_dict[sector][action] = create_a_larger_extrapolated_x_y_axis(temp_dict[sector][f"{sector}SecondTiming"], temp_dict[sector][action], difference)
 
         if sector:
             if basic:
@@ -191,21 +195,44 @@ class ManualSolution:
                 # Yields the data from the action baselines...
                 temp_dict = deepcopy(temp_dict)
                 for i in zip(*[temp_dict[sector][action] for action in temp_actions]):
-                    yield [car_number, i[2], i[1], i[0], i[3], i[4], "", "", "", "", "\n"]  # Car_num, speed, throttle, brake, rpm, gear, leader_gap, position_ahead_gap, updated, most_recent_lap_time
+                    # Note: I am also including the sector time, i[5], for debugging
+                    yield [car_number, i[2], i[1], i[0], i[3], i[4], "", i[5], "", "", "", "\n"]  # Car_num, speed, throttle, brake, rpm, gear, leader_gap, position_ahead_gap, updated, most_recent_lap_time
         else:
             while True:
                 yield ["no sector... huh?"]
 
     def start_streaming(self) -> None:
         gen_list = []
+        gap_lead_time_index = 6
+        last_lap_time_index = 9
         for i in self.car_sector_dict:
-            print(f"Starting streaming for car {i}")
             try:
-                print(f"yas bitches its car number {i}: ", self.car_sector_dict[i]["generator"].__next__())
-            # If we want to prevent StopIteration now we should...
-                gen_list.extend(self.car_sector_dict[i]["generator"].__next__())
+                car_info = self.car_sector_dict[i]["generator"].__next__()
+                gen_list.extend(car_info)  # Get the Okayama baseline info.
             except StopIteration:
                 print(f"We have reached the end of car number {i} for this sector")
+                # TODO: here I should reset the generator somehow!
+                #  The code here will be the main difference for the manual solution
+
+                # Set the sector to be the next one (i.e. if its S1, make it S2. But if its S4, make it S1)
+                cur_sector = self.car_sector_dict[i]["sector"]
+                self.car_sector_dict[i]["sector"] = self.sectors[self.sectors.index(cur_sector) + 1] if cur_sector != "S4" else "S1"
+
+                # Now we need to update the generator (we will just use the baseline time.
+                self.car_sector_dict[i]["generator"] = self.yield_list(sector=self.car_sector_dict[i]["sector"], car_number=i)
+
+                # And start again
+                car_info = self.car_sector_dict[i]["generator"].__next__()
+                gen_list.extend(car_info)  # Get the Okayama baseline info.
+
+            gen_list[gap_lead_time_index] = self.car_sector_dict[i]["gap_lead_time"]
+            gen_list[last_lap_time_index] = self.car_sector_dict[i]["last_lap_time"]
+            gap_lead_time_index += 10
+            last_lap_time_index += 10
+
+        gen_list.extend(("timestamp", time.ctime()))
+        print("this is the list btw and time", time.ctime(), gen_list)
+        # self.mqtt_sender.publish_to_topic(gen_list)
 
 
 def main():
@@ -217,7 +244,7 @@ def main():
 
     while True:
         manual_solution.start_streaming()
-        time.sleep(0.1)
+        time.sleep(0.03)
 
 
 if __name__ == "__main__":
