@@ -220,7 +220,12 @@ class ManualSolution:
                 temp_dict = deepcopy(temp_dict)
                 for i in zip(*[temp_dict[sector][action] for action in temp_actions]):
                     # Note: I am also including the sector time, i[5], for debugging
-                    yield [car_number, i[2], i[1], i[0], i[3], i[4], "", i[5], "", "", "", "\n"]  # Car_num, speed, throttle, brake, rpm, gear, leader_gap, position_ahead_gap, updated, most_recent_lap_time
+                    # yield [car_number, i[2], i[1], i[0], i[3], i[4], "", i[5], "", "", "", "\n"]  # Car_num, speed, throttle, brake, rpm, gear, leader_gap, position_ahead_gap, updated, most_recent_lap_time
+                    if i[0] == 0.0:
+                        brake = True
+                    else:
+                        brake = False
+                    yield [car_number, int(i[2]), int(i[1]), str(brake), int(i[4]), int(i[5]), "", "", "False", "\n"]
         else:
             while True:
                 yield ["no sector... huh?"]
@@ -228,7 +233,8 @@ class ManualSolution:
     def start_streaming(self) -> None:
         gen_list = []
         gap_lead_time_index = 6
-        last_lap_time_index = 9
+        fill_in_the_blank = 7
+        #last_lap_time_index = 9
         for i in self.car_sector_dict:
             try:
                 car_info = self.car_sector_dict[i]["generator"].__next__()
@@ -250,9 +256,12 @@ class ManualSolution:
                 gen_list.extend(car_info)  # Get the Okayama baseline info.
 
             gen_list[gap_lead_time_index] = self.car_sector_dict[i]["gap_lead_time"]
-            gen_list[last_lap_time_index] = self.car_sector_dict[i]["last_lap_time"]
+            gen_list[fill_in_the_blank] = self.car_sector_dict[i]["last_lap_time"]
+            #gen_list[7] = self.car_sector_dict[i]["gap_lead_time"]
+            # gen_list[last_lap_time_index] = self.car_sector_dict[i]["last_lap_time"]
             gap_lead_time_index += 10
-            last_lap_time_index += 10
+            fill_in_the_blank += 10
+            # last_lap_time_index += 11
 
         gen_list.extend(("timestamp", 123))
         print("this is the list btw and time", time.ctime(), gen_list)
