@@ -14,7 +14,7 @@ from send_mqtt import SendTimingTableToMQTT
 
 
 class ManualSolution:
-    def __init__(self):
+    def __init__(self, topic: str = "RACE/new_json_file"):
         self.action_baselines: Dict = open_json_as_dict("data/okayama_action_baselines.json")
         self.car_timing_dict: Dict = get_initialized_car_timing_dict()
         self.car_sector_dict: Dict = get_initialized_car_sector_dict()
@@ -26,7 +26,7 @@ class ManualSolution:
         self.sector_baseline_times = {"S1": 29.5, "S2": 25.75, "S3": 36.25, "S4": 17.25}
 
         self.loop = asyncio.get_event_loop()
-        self.mqtt_sender = SendTimingTableToMQTT()
+        self.mqtt_sender = SendTimingTableToMQTT(topic=topic)
 
 
     def read_input(self) -> Dict[str, str]:
@@ -64,7 +64,6 @@ class ManualSolution:
                     temp_list.extend([temp_dict["car_number"][car_num][4]]) # Gap to leader
                     temp_list.extend(['', '', '', '', '', '', '', temp_dict["car_number"][car_num][0], temp_dict["car_number"][car_num][1], temp_dict["car_number"][car_num][2], temp_dict["car_number"][car_num][3], temp_dict["car_number"][car_num][4]]) # Sector times
                     temp_list.extend("\n")
-                print(temp_list)
 
             self.car_info_list = deepcopy(temp_list)
             print(self.car_info_list)
@@ -85,9 +84,9 @@ class ManualSolution:
                                       temp_dict["car_number"][car_num][3],
                                       temp_dict["car_number"][car_num][4]])  # Sector times
                     temp_list.extend("\n")
-
             self.car_info_list = deepcopy(temp_list)
-            print(self.car_info_list)
+            # print("self.car_info_list: ", self.car_info_list, "\n")
+            self.iterate_through_stack(self.compare_scraped_data_with_car_timing_dict())
             await asyncio.sleep(1)
 
     def iterate_car_sector_timings(self) -> None:
@@ -113,8 +112,10 @@ class ManualSolution:
         """
         This function compares the SectorTiming values from the scraped data, to the values stored in the car_timing_dict.
         If the values are different, the car_timing_dict is updated, and we add the car_number and sector to a stack.
+
+        I will also try to update this, if any one of the values changes (i.e gap lead time)
         """
-        print("We are in the start of compare_scraped_data_with_car_timing_dict, time:", time.ctime())
+        # print("We are in the start of compare_scraped_data_with_car_timing_dict, time:", time.ctime())
         _stack = []
 
         for car in self.car_iterator():
@@ -148,6 +149,7 @@ class ManualSolution:
                     self.update_car_sector_dict(_stack[i][0], next_sector, deepcopy(_stack[i][2]), deepcopy(_stack[i][3]), sector_time)  #_stack[i][0] is the car number, next_sector is the next nexsector, _stack[i][2] is the gap lead time, _stack[i][3] is the last lap time.
             else:
                 # print(f"Sending last one! {_stack[i][0]} {next_sector}")
+                next_sector = self.sectors[self.sectors.index(_stack[i][1]) + 1] if _stack[i][1] != "S4" else "S1"
                 sector_time = _stack[i][4][self.sectors.index(next_sector)]
                 self.update_car_sector_dict(car_number=_stack[i][0], sector=next_sector, gap_lead_time=deepcopy(_stack[i][2]),
                                             last_lap_time=deepcopy(_stack[i][3]), sector_time=sector_time)
@@ -257,7 +259,7 @@ class ManualSolution:
         self.mqtt_sender.publish_to_topic(data=gen_list)
 
     async def async_streaming(self):
-        await asyncio.sleep(3)
+        await asyncio.sleep(5)
         while True:
             self.start_streaming()
             await asyncio.sleep(0.22)
@@ -269,17 +271,27 @@ class ManualSolution:
         self.loop.run_until_complete(asyncio.gather(task_1, task_2))
         self.loop.close()
 
+    def run_synchronously(self):
+        self.read_file_continuously(not_continuous=True)
+        self.iterate_through_stack(self.compare_scraped_data_with_car_timing_dict())
+
+        while True:
+            self.start_streaming()
+            time.sleep(0.23)
+
+
 def main():
     manual_solution = ManualSolution()
     # manual_solution.read_input()
-    manual_solution.read_file_continuously(not_continuous=True)
-    # manual_solution.iterate_car_sector_timings()
-    manual_solution.iterate_through_stack(manual_solution.compare_scraped_data_with_car_timing_dict())
-    # manual_solution.run_asynchronously()
+    # manual_solution.read_file_continuously(not_continuous=True)
+    # # manual_solution.iterate_car_sector_timings()
+    # manual_solution.iterate_through_stack(manual_solution.compare_scraped_data_with_car_timing_dict())
 
-    while True:
-        manual_solution.start_streaming()
-        time.sleep(0.03)
+    # manual_solution.run_asynchronously()
+    manual_solution.run_asynchronously()
+    # while True:
+    #     manual_solution.start_streaming()
+    #     time.sleep(0.03)
 
 
 if __name__ == "__main__":

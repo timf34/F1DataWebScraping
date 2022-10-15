@@ -4,7 +4,7 @@ from aws_keys import ACCESS_KEY, SECRET_ACCESS_KEY
 
 
 class SendTimingTableToMQTT:
-    def __init__(self, topic: str = "RACE/3"):
+    def __init__(self, topic: str = "RACE/new_json_file"):
         self.access_key: str = ACCESS_KEY
         self.secret_key: str = SECRET_ACCESS_KEY
         self.topic: str = topic
