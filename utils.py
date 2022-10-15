@@ -139,7 +139,7 @@ def create_manual_soln_dict():
         car_nums = f.readlines()
 
     # Create a dict of car numbers
-    car_nums_dict = {"car_numbers" : {car_num.replace("\n", ""): ["31", "32", "33", "34", "1'18 (most recent time)", "gap to leader"] for car_num in car_nums}}
+    car_nums_dict = {"car_number" : {car_num.replace("\n", ""): ["31", "32", "33", "34", "1'18", "+5.5"] for car_num in car_nums}}
     print(car_nums_dict)
 
     with open("data/manual_soln_dict.json", "w") as f:
@@ -152,8 +152,9 @@ def main():
     # x = open_json_as_dict("data/okayama_action_baselines.json")
     # print(type(x["S1"]["S1SecondTiming"][2]))
 
-    print(get_initialized_manual_soln_car_sector_dict())
-    # create_and_write_to_json_file()
+    # print(get_initialized_manual_soln_car_sector_dict())
+    create_manual_soln_dict()
+
 
 if __name__ == "__main__":
     main()
