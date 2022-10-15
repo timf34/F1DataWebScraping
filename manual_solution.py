@@ -254,7 +254,7 @@ class ManualSolution:
             gap_lead_time_index += 10
             last_lap_time_index += 10
 
-        gen_list.extend(("timestamp", time.ctime()))
+        gen_list.extend(("timestamp", 123))
         print("this is the list btw and time", time.ctime(), gen_list)
         self.mqtt_sender.publish_to_topic(data=gen_list)
 
