@@ -241,6 +241,8 @@ class LiveOrchestrator:
         while True:
             # Get our Timing Table object
             table_db = self.continuous_scraping.continuous_update()
+            # print("timing_table:", table_db.cars, "\n")
+            print(str(table_db.cars).replace("\\xa0", "replaced").encode("utf-8"))
 
             # Get our Timing Table object
             short_list = self.convert_to_list.convert_timing_table_to_short_list(
@@ -250,7 +252,7 @@ class LiveOrchestrator:
             # self.mqtt_client.publish_to_topic(data=short_list)
 
             if print_info:
-                print("Here dawg: ", short_list)
+                print("Here dawg: ", short_list, "\n")
             count += 1
             return short_list  # Note: this won't run forever as we are returning the list
 
@@ -278,7 +280,7 @@ class LiveOrchestrator:
 
 
 def live_loop() -> None:
-    orchestrator = LiveOrchestrator()
+    orchestrator = LiveOrchestrator(use_async=False)
 
     while True:
         orchestrator.non_async_run(print_info=True)
@@ -286,6 +288,7 @@ def live_loop() -> None:
 
 def main():
     # web_scraper = SuperTaikyuScraping(use_local_html=False)
+    # web_scraper.save_soup()
     # web_scraper.save_soup()
     # # web_scraper.working_with_rows()
     # # web_scraper.working_with_headers()
